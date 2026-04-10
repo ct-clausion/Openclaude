@@ -250,6 +250,10 @@ export interface GroupChatMessage {
   content: string;
   messageType: string;
   createdAt: string;
+  fileKey?: string;
+  fileName?: string;
+  fileSize?: number;
+  contentType?: string;
 }
 
 // ── Code Analysis ────────────────────────────────────────────

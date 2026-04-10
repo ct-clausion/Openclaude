@@ -4,53 +4,6 @@ import { motion } from 'framer-motion';
 import { consultationsApi } from '../../api/consultations';
 import type { Consultation, ActionPlan } from '../../types';
 
-const MOCK_CONSULTATIONS: Consultation[] = [
-  {
-    id: 'con1',
-    studentId: 's1',
-    instructorId: 'i1',
-    courseId: 'c1',
-    scheduledAt: '2026-04-10T14:00:00Z',
-    status: 'SCHEDULED',
-    summaryText: '',
-    actionPlanJson: '[]',
-    createdAt: '2026-04-05T10:00:00Z',
-  },
-  {
-    id: 'con2',
-    studentId: 's1',
-    instructorId: 'i1',
-    courseId: 'c1',
-    scheduledAt: '2026-04-03T14:00:00Z',
-    status: 'COMPLETED',
-    summaryText:
-      '재귀 함수 이해도 부족에 대한 상담. 기초 예제부터 단계별로 연습하는 전략 수립.',
-    actionPlanJson: JSON.stringify([
-      {
-        title: '재귀 기초 예제 5개 풀기',
-        dueDate: '2026-04-07',
-        linkedSkillId: 'sk2',
-        priority: 'HIGH',
-        status: 'COMPLETED',
-      },
-      {
-        title: '피보나치 구현 변형 3가지',
-        dueDate: '2026-04-09',
-        linkedSkillId: 'sk2',
-        priority: 'MEDIUM',
-        status: 'IN_PROGRESS',
-      },
-      {
-        title: '트리 순회 재귀 구현',
-        dueDate: '2026-04-12',
-        linkedSkillId: 'sk8',
-        priority: 'MEDIUM',
-        status: 'PENDING',
-      },
-    ] satisfies ActionPlan[]),
-    createdAt: '2026-04-01T10:00:00Z',
-  },
-];
 
 function parseActionPlans(json: string): ActionPlan[] {
   try {
@@ -79,13 +32,12 @@ interface ConsultationActionCardProps {
 const ConsultationActionCard: React.FC<ConsultationActionCardProps> = ({
   role = 'student',
 }) => {
-  const { data: consultations } = useQuery<Consultation[]>({
+  const { data: consultations, isLoading } = useQuery<Consultation[]>({
     queryKey: ['consultations', role],
     queryFn: () => consultationsApi.getConsultations(role),
-    placeholderData: MOCK_CONSULTATIONS,
   });
 
-  const list = consultations ?? MOCK_CONSULTATIONS;
+  const list = consultations ?? [];
 
   return (
     <motion.div
@@ -94,6 +46,14 @@ const ConsultationActionCard: React.FC<ConsultationActionCardProps> = ({
       className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100"
     >
       <h2 className="text-lg font-bold text-slate-900 mb-4">상담 현황</h2>
+
+      {isLoading && (
+        <p className="text-sm text-slate-400 text-center py-6">불러오는 중...</p>
+      )}
+
+      {!isLoading && list.length === 0 && (
+        <p className="text-sm text-slate-400 text-center py-6">상담 내역이 없습니다.</p>
+      )}
 
       <div className="space-y-4">
         {list.map((con) => {

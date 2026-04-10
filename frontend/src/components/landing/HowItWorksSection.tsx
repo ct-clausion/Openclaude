@@ -4,8 +4,8 @@ const steps = [
   {
     step: 1,
     icon: '\u{1F4DA}',
-    title: '커리큐럼 등록',
-    description: '교수자가 과정 커리큐럼과 스킬 맵을 등록하면 AI가 학습 구조를 분석합니다.',
+    title: '커리큘럼 등록',
+    description: '강사가 과정 커리큘럼과 스킬 맵을 등록하면 AI가 학습 구조를 분석합니다.',
   },
   {
     step: 2,

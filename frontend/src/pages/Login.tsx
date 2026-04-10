@@ -29,7 +29,7 @@ export default function Login() {
 
   const roles: { value: 'STUDENT' | 'INSTRUCTOR'; label: string }[] = [
     { value: 'STUDENT', label: '학생' },
-    { value: 'INSTRUCTOR', label: '교수자' },
+    { value: 'INSTRUCTOR', label: '강사' },
   ];
 
   return (

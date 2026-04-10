@@ -39,7 +39,11 @@ export const questionsApi = {
     answer: string;
     explanation: string;
   }): Promise<Question> {
-    return api.post<Question>('/api/questions', data);
+    return api.post<Question>('/api/questions', {
+      ...data,
+      courseId: Number(data.courseId),
+      skillId: data.skillId ? Number(data.skillId) : null,
+    });
   },
 
   updateQuestion(questionId: string, data: {

@@ -1,73 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import ConsultationActionCard from '../../components/student/ConsultationActionCard';
+import { consultationsApi } from '../../api/consultations';
 import type { Consultation, ActionPlan } from '../../types';
-
-const PAST_CONSULTATIONS: (Consultation & { actionPlans: ActionPlan[] })[] = [
-  {
-    id: 'con2',
-    studentId: 's1',
-    instructorId: 'i1',
-    courseId: 'c1',
-    scheduledAt: '2026-04-03T14:00:00Z',
-    status: 'COMPLETED',
-    summaryText:
-      '재귀 함수 이해도 부족에 대한 상담을 진행했습니다. 기초 예제부터 단계별로 접근하는 전략을 수립했으며, 학생의 자신감 회복을 위해 작은 성공 경험을 쌓는 것이 중요하다고 조언했습니다.',
-    actionPlanJson: '[]',
-    createdAt: '2026-04-01T10:00:00Z',
-    actionPlans: [
-      {
-        title: '재귀 기초 예제 5개 풀기',
-        dueDate: '2026-04-07',
-        linkedSkillId: 'sk2',
-        priority: 'HIGH',
-        status: 'COMPLETED',
-      },
-      {
-        title: '피보나치 구현 변형 3가지',
-        dueDate: '2026-04-09',
-        linkedSkillId: 'sk2',
-        priority: 'MEDIUM',
-        status: 'IN_PROGRESS',
-      },
-      {
-        title: '트리 순회 재귀 구현',
-        dueDate: '2026-04-12',
-        linkedSkillId: 'sk8',
-        priority: 'MEDIUM',
-        status: 'PENDING',
-      },
-    ],
-  },
-  {
-    id: 'con3',
-    studentId: 's1',
-    instructorId: 'i1',
-    courseId: 'c1',
-    scheduledAt: '2026-03-27T14:00:00Z',
-    status: 'COMPLETED',
-    summaryText:
-      '첫 상담으로 학습 스타일과 목표를 파악했습니다. 시각적 학습을 선호하며, 실습 위주의 학습이 효과적일 것으로 판단됩니다.',
-    actionPlanJson: '[]',
-    createdAt: '2026-03-25T10:00:00Z',
-    actionPlans: [
-      {
-        title: '학습 루틴 설정',
-        dueDate: '2026-03-30',
-        linkedSkillId: '',
-        priority: 'HIGH',
-        status: 'COMPLETED',
-      },
-      {
-        title: '기초 과제 3개 완료',
-        dueDate: '2026-04-02',
-        linkedSkillId: 'sk1',
-        priority: 'MEDIUM',
-        status: 'COMPLETED',
-      },
-    ],
-  },
-];
 
 const PLAN_STATUS_STYLES: Record<
   string,
@@ -90,7 +26,24 @@ const PLAN_STATUS_STYLES: Record<
   },
 };
 
+function parseActionPlans(con: Consultation): ActionPlan[] {
+  // actionPlanJson can be a string or already-parsed array from the backend
+  const raw = con.actionPlanJson;
+  if (Array.isArray(raw)) return raw as unknown as ActionPlan[];
+  if (typeof raw === 'string') {
+    try { return JSON.parse(raw); } catch { return []; }
+  }
+  return [];
+}
+
 const ConsultationPage: React.FC = () => {
+  const { data: consultations, isLoading } = useQuery<Consultation[]>({
+    queryKey: ['consultations', 'student'],
+    queryFn: () => consultationsApi.getConsultations('student'),
+  });
+
+  const pastConsultations = (consultations ?? []).filter((c) => c.status === 'COMPLETED');
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="sticky top-0 z-30 bg-white/80 backdrop-blur border-b border-slate-100">
@@ -112,12 +65,21 @@ const ConsultationPage: React.FC = () => {
             지난 상담 기록
           </h2>
 
+          {isLoading && (
+            <p className="text-sm text-slate-400 text-center py-6">불러오는 중...</p>
+          )}
+
+          {!isLoading && pastConsultations.length === 0 && (
+            <p className="text-sm text-slate-400 text-center py-6">지난 상담 기록이 없습니다.</p>
+          )}
+
           <div className="space-y-6">
-            {PAST_CONSULTATIONS.map((con, i) => {
-              const completedPlans = con.actionPlans.filter(
+            {pastConsultations.map((con, i) => {
+              const actionPlans = parseActionPlans(con);
+              const completedPlans = actionPlans.filter(
                 (p) => p.status === 'COMPLETED',
               ).length;
-              const totalPlans = con.actionPlans.length;
+              const totalPlans = actionPlans.length;
               const completionRate =
                 totalPlans > 0
                   ? Math.round((completedPlans / totalPlans) * 100)
@@ -169,7 +131,7 @@ const ConsultationPage: React.FC = () => {
                       />
                     </div>
                     <div className="space-y-2">
-                      {con.actionPlans.map((plan, j) => {
+                      {actionPlans.map((plan, j) => {
                         const style =
                           PLAN_STATUS_STYLES[plan.status] ??
                           PLAN_STATUS_STYLES.PENDING;

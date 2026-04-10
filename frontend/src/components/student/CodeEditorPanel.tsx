@@ -4,6 +4,9 @@ import { EditorView, keymap, lineNumbers, highlightActiveLine, Decoration } from
 import type { DecorationSet, ViewUpdate } from '@codemirror/view';
 import { EditorState, StateField, StateEffect } from '@codemirror/state';
 import { javascript } from '@codemirror/lang-javascript';
+import { python } from '@codemirror/lang-python';
+import { java } from '@codemirror/lang-java';
+import { cpp } from '@codemirror/lang-cpp';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { useCodeEditor } from '../../hooks/useCodeEditor';
 import { codeAnalysisApi } from '../../api/codeAnalysis';
@@ -97,6 +100,15 @@ const highlightedLinesField = StateField.define<DecorationSet>({
   provide: (f) => EditorView.decorations.from(f),
 });
 
+// ── Language config ─────────────────────────────────────────
+const LANGUAGES = [
+  { value: 'javascript', label: 'JavaScript', ext: () => javascript({ typescript: false, jsx: true }) },
+  { value: 'typescript', label: 'TypeScript', ext: () => javascript({ typescript: true, jsx: true }) },
+  { value: 'python', label: 'Python', ext: () => python() },
+  { value: 'java', label: 'Java', ext: () => java() },
+  { value: 'cpp', label: 'C / C++', ext: () => cpp() },
+] as const;
+
 // Custom theme overrides so the editor blends with slate-900 background
 const editorTheme = EditorView.theme({
   '&': {
@@ -135,6 +147,8 @@ const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({
   const {
     code,
     setCode,
+    language,
+    setLanguage,
     feedbacks,
     setFeedbacks,
     isSubmitting,
@@ -142,6 +156,8 @@ const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({
     activeLineHighlight,
     setActiveLineHighlight,
   } = useCodeEditor();
+
+  const langConfig = LANGUAGES.find((l) => l.value === language) ?? LANGUAGES[0];
 
   const editorContainerRef = useRef<HTMLDivElement>(null);
   const editorViewRef = useRef<EditorView | null>(null);
@@ -178,7 +194,7 @@ const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({
       extensions: [
         lineNumbers(),
         highlightActiveLine(),
-        javascript({ typescript: true, jsx: true }),
+        langConfig.ext(),
         oneDark,
         editorTheme,
         highlightedLinesField,
@@ -199,9 +215,9 @@ const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({
       view.destroy();
       editorViewRef.current = null;
     };
-    // Only run once on mount; code sync is handled via updateListener
+    // Re-create editor when language changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [language]);
 
   // Sync highlighted lines + active line into CodeMirror
   useEffect(() => {
@@ -228,7 +244,7 @@ const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({
         courseId: Number(courseId),
         skillId: skillId ? Number(skillId) : null,
         codeContent: code,
-        language: 'javascript',
+        language,
       });
 
       // Poll the async job until AI analysis completes
@@ -261,9 +277,15 @@ const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({
       <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
         <div className="flex items-center gap-3">
           <h2 className="text-sm font-bold text-slate-900">코드 에디터</h2>
-          <span className="text-xs text-slate-400 bg-slate-100 rounded px-1.5 py-0.5">
-            JavaScript
-          </span>
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="text-xs text-slate-600 bg-slate-100 rounded px-2 py-1 border-none outline-none cursor-pointer hover:bg-slate-200 transition-colors"
+          >
+            {LANGUAGES.map((l) => (
+              <option key={l.value} value={l.value}>{l.label}</option>
+            ))}
+          </select>
         </div>
         <button
           onClick={handleAnalyze}
@@ -300,12 +322,12 @@ const CodeEditorPanel: React.FC<CodeEditorPanelProps> = ({
       </div>
 
       {/* Editor + Sidebar */}
-      <div className="flex" style={{ minHeight: 320 }}>
+      <div className="flex" style={{ minHeight: 320, maxHeight: 1000 }}>
         {/* CodeMirror Editor */}
         <div
           ref={editorContainerRef}
           className="flex-1 overflow-auto bg-slate-900"
-          style={{ minHeight: 320 }}
+          style={{ minHeight: 320, maxHeight: 1000 }}
         />
 
         {/* AI Feedback Sidebar */}

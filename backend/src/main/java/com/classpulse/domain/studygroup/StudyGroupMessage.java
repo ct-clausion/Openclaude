@@ -30,6 +30,18 @@ public class StudyGroupMessage {
     @Builder.Default
     private String messageType = "TEXT";
 
+    @Column(name = "file_key", length = 500)
+    private String fileKey;
+
+    @Column(name = "file_name", length = 255)
+    private String fileName;
+
+    @Column(name = "file_size")
+    private Long fileSize;
+
+    @Column(name = "content_type", length = 100)
+    private String contentType;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 

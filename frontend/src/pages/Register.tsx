@@ -43,7 +43,7 @@ export default function Register() {
 
   const roles: { value: User['role']; label: string; desc: string }[] = [
     { value: 'STUDENT', label: '학생', desc: '학습 및 복습 관리' },
-    { value: 'INSTRUCTOR', label: '교수자', desc: '커리큘럼 및 상담 관리' },
+    { value: 'INSTRUCTOR', label: '강사', desc: '커리큘럼 및 상담 관리' },
   ];
 
   return (

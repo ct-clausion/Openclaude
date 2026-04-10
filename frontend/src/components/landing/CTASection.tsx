@@ -47,9 +47,6 @@ export default function CTASection() {
           >
             무료로 시작하기
           </button>
-          <button className="px-8 py-3.5 rounded-xl text-white/90 font-bold text-sm border border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-all">
-            도입 문의
-          </button>
         </motion.div>
       </div>
     </section>

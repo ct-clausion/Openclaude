@@ -72,16 +72,16 @@ const TwinStateCard: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       className="rounded-2xl bg-white p-6 shadow-sm border border-slate-100"
     >
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-bold text-slate-900">나의 학습 트윈</h2>
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+        <h2 className="text-base font-bold text-slate-900 whitespace-nowrap">나의 학습 트윈</h2>
+        <div className="flex items-center gap-1.5 flex-wrap">
           {trend && (
             <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${trend.color} ${trend.bg}`}>
               {trend.icon} {trend.label}
             </span>
           )}
           <span
-            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${risk.color} ${risk.bg}`}
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${risk.color} ${risk.bg}`}
           >
             위험도: {risk.label}
           </span>
@@ -89,8 +89,8 @@ const TwinStateCard: React.FC = () => {
       </div>
 
       {/* Radar Chart */}
-      <div className="flex justify-center my-2">
-        <SVGRadarChart data={radarValues} size={220} showLabels />
+      <div className="flex justify-center my-2 w-full max-w-[220px] mx-auto">
+        <SVGRadarChart data={radarValues} size={200} showLabels />
       </div>
 
       {/* AI Insight */}

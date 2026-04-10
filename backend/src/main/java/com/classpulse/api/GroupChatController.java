@@ -37,11 +37,18 @@ public class GroupChatController {
 
     // ── DTOs ──────────────────────────────────────────────────────────
 
-    public record ChatMessageRequest(String content) {}
+    public record ChatMessageRequest(
+            String content,
+            String fileKey,
+            String fileName,
+            Long fileSize,
+            String contentType
+    ) {}
 
     public record ChatMessageResponse(
             Long id, Long groupId, Long senderId, String senderName,
-            String content, String messageType, String createdAt
+            String content, String messageType, String createdAt,
+            String fileKey, String fileName, Long fileSize, String contentType
     ) {
         public static ChatMessageResponse from(StudyGroupMessage msg) {
             return new ChatMessageResponse(
@@ -51,7 +58,11 @@ public class GroupChatController {
                     msg.getSender().getName(),
                     msg.getContent(),
                     msg.getMessageType(),
-                    msg.getCreatedAt().toString()
+                    msg.getCreatedAt().toString(),
+                    msg.getFileKey(),
+                    msg.getFileName(),
+                    msg.getFileSize(),
+                    msg.getContentType()
             );
         }
     }
@@ -84,11 +95,16 @@ public class GroupChatController {
         }
 
         // Persist to DB
+        boolean isFile = request.fileKey() != null && !request.fileKey().isBlank();
         StudyGroupMessage message = StudyGroupMessage.builder()
                 .studyGroup(group)
                 .sender(sender)
-                .content(request.content())
-                .messageType("TEXT")
+                .content(request.content() != null ? request.content() : "")
+                .messageType(isFile ? "FILE" : "TEXT")
+                .fileKey(isFile ? request.fileKey() : null)
+                .fileName(isFile ? request.fileName() : null)
+                .fileSize(isFile ? request.fileSize() : null)
+                .contentType(isFile ? request.contentType() : null)
                 .build();
         message = messageRepository.save(message);
 
@@ -104,6 +120,10 @@ public class GroupChatController {
             payload.put("content", response.content());
             payload.put("messageType", response.messageType());
             payload.put("createdAt", response.createdAt());
+            payload.put("fileKey", response.fileKey());
+            payload.put("fileName", response.fileName());
+            payload.put("fileSize", response.fileSize());
+            payload.put("contentType", response.contentType());
             rabbitTemplate.convertAndSend(
                     RabbitMQConfig.GROUP_CHAT_EXCHANGE,
                     "group." + groupId,

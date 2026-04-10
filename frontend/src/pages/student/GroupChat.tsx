@@ -17,9 +17,11 @@ export default function GroupChat() {
   const [messages, setMessages] = useState<GroupChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [connected, setConnected] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const clientRef = useRef<Client | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Fetch group info
   const { data: group } = useQuery<StudyGroup>({
@@ -98,6 +100,48 @@ export default function GroupChat() {
     inputRef.current?.focus();
   }, [input, groupId]);
 
+  const handleFileUpload = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !clientRef.current?.connected) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert('파일 크기는 10MB 이하만 가능합니다.');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const baseUrl = import.meta.env.VITE_API_URL ?? '';
+      const res = await fetch(`${baseUrl}/api/files/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+
+      clientRef.current.publish({
+        destination: `/app/group-chat/${groupId}/send`,
+        body: JSON.stringify({
+          content: file.name,
+          fileKey: data.fileKey,
+          fileName: data.fileName,
+          fileSize: data.fileSize,
+          contentType: data.contentType,
+        }),
+      });
+    } catch {
+      alert('파일 업로드에 실패했습니다.');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  }, [groupId, token]);
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -119,6 +163,29 @@ export default function GroupChat() {
       weekday: 'short',
     });
   };
+
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes}B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+  };
+
+  const handleFileDownload = async (fileKey: string, fileName: string) => {
+    try {
+      const baseUrl = import.meta.env.VITE_API_URL ?? '';
+      const res = await fetch(`${baseUrl}/api/files/download-url?fileKey=${encodeURIComponent(fileKey)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      window.open(data.url, '_blank');
+    } catch {
+      alert('파일 다운로드에 실패했습니다.');
+    }
+  };
+
+  const isImageFile = (contentType?: string) => contentType?.startsWith('image/');
 
   // Group messages by date
   const groupedMessages: { date: string; msgs: GroupChatMessage[] }[] = [];
@@ -258,7 +325,30 @@ export default function GroupChat() {
                               : 'bg-white border border-slate-100 text-slate-800 rounded-bl-md shadow-sm'
                           }`}
                         >
-                          {msg.content}
+                          {msg.messageType === 'FILE' && msg.fileKey ? (
+                            <button
+                              onClick={() => handleFileDownload(msg.fileKey!, msg.fileName || 'file')}
+                              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+                            >
+                              <svg className={`w-5 h-5 shrink-0 ${isMe ? 'text-white/80' : 'text-indigo-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                {isImageFile(msg.contentType) ? (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                                ) : (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                                )}
+                              </svg>
+                              <div className="text-left">
+                                <p className={`text-xs font-medium truncate max-w-[180px] ${isMe ? 'text-white' : 'text-slate-700'}`}>
+                                  {msg.fileName}
+                                </p>
+                                <p className={`text-[10px] ${isMe ? 'text-white/60' : 'text-slate-400'}`}>
+                                  {formatFileSize(msg.fileSize)}
+                                </p>
+                              </div>
+                            </button>
+                          ) : (
+                            msg.content
+                          )}
                         </div>
                         {!isMe && (
                           <span className="text-[10px] text-slate-300 shrink-0 mb-0.5">
@@ -280,6 +370,30 @@ export default function GroupChat() {
       {/* Input area */}
       <div className="sticky bottom-0 bg-white/80 backdrop-blur-md border-t border-slate-100 px-6 py-3">
         <div className="max-w-3xl mx-auto flex items-center gap-3">
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={handleFileUpload}
+            className="hidden"
+            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip,.rar,.7z,.py,.java,.js,.ts,.c,.cpp,.h"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={!connected || uploading}
+            className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            title="파일 첨부"
+          >
+            {uploading ? (
+              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+            ) : (
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
+            )}
+          </button>
           <input
             ref={inputRef}
             type="text"

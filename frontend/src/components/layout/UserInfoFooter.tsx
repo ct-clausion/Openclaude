@@ -12,7 +12,7 @@ export default function UserInfoFooter() {
 
   const roleLabel: Record<string, string> = {
     STUDENT: '학생',
-    INSTRUCTOR: '교수자',
+    INSTRUCTOR: '강사',
   };
 
   const initial = user.name.charAt(0).toUpperCase();

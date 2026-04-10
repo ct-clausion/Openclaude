@@ -20,7 +20,7 @@ function FloatingStatCard({ label, delay }: { label: string; delay: number }) {
       transition={{ delay, duration: 0.6, ease: 'easeOut' }}
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
     >
-      <p className="text-sm font-bold text-white/90">{label}</p>
+      <p className="text-sm font-bold text-indigo-600">{label}</p>
     </motion.div>
   );
 }
@@ -85,7 +85,7 @@ export default function AnimatedGradientHero() {
           className="text-lg text-white/60 max-w-2xl mx-auto mb-10 leading-relaxed"
         >
           디지털 트윈이 학생의 이해도와 망각 위험을 실시간으로 분석하고,
-          교수자에게 최적의 상담 타이밍과 과제를 제안합니다.
+          강사에게 최적의 상담 타이밍과 과제를 제안합니다.
         </motion.p>
 
         {/* CTA buttons */}
@@ -100,11 +100,6 @@ export default function AnimatedGradientHero() {
             className="px-8 py-3 rounded-xl bg-white text-indigo-700 font-bold text-sm shadow-lg shadow-indigo-500/20 hover:shadow-xl hover:shadow-indigo-500/30 hover:-translate-y-0.5 transition-all duration-200"
           >
             지금 시작하기 &rarr;
-          </button>
-          <button
-            className="px-8 py-3 rounded-xl font-bold text-sm text-white/90 border border-white/20 bg-white/5 backdrop-blur-sm hover:bg-white/10 hover:-translate-y-0.5 transition-all duration-200"
-          >
-            데모 보기
           </button>
         </motion.div>
 
