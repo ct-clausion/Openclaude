@@ -52,9 +52,7 @@ export default function GroupChat() {
     if (!groupId || !token) return;
 
     const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const wsHost = import.meta.env.VITE_API_URL
-      ? new URL(import.meta.env.VITE_API_URL).host
-      : 'localhost:8080';
+    const wsHost = window.location.host;
 
     const client = new Client({
       brokerURL: `${wsProtocol}://${wsHost}/ws-chat?token=${token}`,

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -114,27 +114,14 @@ export default function CurriculumUpload() {
     staleTime: 60_000,
   });
 
-  // 과정이 없으면 안내 메시지
-  if (phase === 'loading' && !coursesLoading && !courseId) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 flex items-center justify-center">
-        <div className="bg-white/85 backdrop-blur-[12px] border border-white/60 rounded-2xl shadow-lg p-12 text-center max-w-md">
-          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
-            <svg className="w-7 h-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.331 0 4.472.89 6.075 2.356M12 6.042c1.624-1.466 3.744-2.292 6-2.292 1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18c-2.331 0-4.472.89-6.075 2.356" />
-            </svg>
-          </div>
-          <h3 className="text-base font-bold text-slate-800 mb-2">등록된 과정이 없습니다</h3>
-          <p className="text-sm text-slate-500">과정을 먼저 생성한 후 커리큘럼을 업로드하세요.</p>
-        </div>
-      </div>
-    );
-  }
+  // 스킬 데이터가 로드되면 phase 결정 (useEffect로 이동하여 렌더 중 setState 방지)
+  useEffect(() => {
+    if (phase !== 'loading') return;
+    if (coursesLoading) return;
+    if (!courseId) return; // courseId 없으면 아래 early return에서 처리
+    if (existingSkills === undefined) return;
 
-  // 스킬 데이터가 로드되면 phase 결정
-  if (phase === 'loading' && existingSkills !== undefined) {
     if (existingSkills.length > 0) {
-      // ID→이름 매핑
       const idToName: Record<string, string> = {};
       existingSkills.forEach((s) => { idToName[String(s.id)] = s.name; });
 
@@ -153,7 +140,7 @@ export default function CurriculumUpload() {
     } else {
       setPhase('input');
     }
-  }
+  }, [phase, coursesLoading, courseId, existingSkills]);
 
   const analyzeMutation = useMutation({
     mutationFn: async () => {
@@ -210,6 +197,23 @@ export default function CurriculumUpload() {
       setPhase('input');
     },
   });
+
+  // 과정이 없으면 안내 메시지 (모든 hooks 선언 이후에 위치)
+  if (phase === 'loading' && !coursesLoading && !courseId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30 flex items-center justify-center">
+        <div className="bg-white/85 backdrop-blur-[12px] border border-white/60 rounded-2xl shadow-lg p-12 text-center max-w-md">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
+            <svg className="w-7 h-7 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.331 0 4.472.89 6.075 2.356M12 6.042c1.624-1.466 3.744-2.292 6-2.292 1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18c-2.331 0-4.472.89-6.075 2.356" />
+            </svg>
+          </div>
+          <h3 className="text-base font-bold text-slate-800 mb-2">등록된 과정이 없습니다</h3>
+          <p className="text-sm text-slate-500">과정을 먼저 생성한 후 커리큘럼을 업로드하세요.</p>
+        </div>
+      </div>
+    );
+  }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {

@@ -24,7 +24,7 @@ export default function RiskAlertBanner() {
   const { data: students = MOCK_RISK_STUDENTS } = useQuery({
     queryKey: ['instructor', 'risk-alerts', courseId],
     queryFn: async () => {
-      const entries = await instructorApi.getCourseStudents(courseId);
+      const entries = await instructorApi.getCourseStudents(courseId!);
       // Filter high-risk students (overallRiskScore >= 0.5) and map to UI format
       return entries
         .filter((e) => Number(e.overallRiskScore) >= 0.5)
@@ -37,6 +37,7 @@ export default function RiskAlertBanner() {
           return { id: String(e.studentId), name: e.studentName, reasons };
         });
     },
+    enabled: !!courseId,
     placeholderData: MOCK_RISK_STUDENTS,
     staleTime: 30_000,
   });

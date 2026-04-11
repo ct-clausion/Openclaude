@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { consultationsApi } from '../../api/consultations';
 import { instructorApi } from '../../api/instructor';
+import { api } from '../../api/client';
 import { useAuthStore } from '../../store/authStore';
 import { useCourseId } from '../../hooks/useCourseId';
 import type { Consultation } from '../../types';
@@ -169,9 +170,22 @@ export default function Consultations() {
     staleTime: 60_000,
   });
 
-  const startConsultation = (id: string) => {
-    setActiveConsultationId(id);
-    setView('active');
+  const [startingCall, setStartingCall] = useState<string | null>(null);
+
+  const startConsultation = async (id: string) => {
+    setStartingCall(id);
+    try {
+      // Call start-video which notifies the student via SSE
+      await api.post<{ consultationId: number; roomName: string; token: string }>(
+        `/api/consultations/${id}/start-video`,
+      );
+      // Navigate to the video call page
+      navigate(`/instructor/consultation/${id}/video`);
+    } catch {
+      alert('화상 통화를 시작할 수 없습니다.');
+    } finally {
+      setStartingCall(null);
+    }
   };
 
   const endConsultation = () => {
@@ -255,9 +269,10 @@ export default function Consultations() {
                       </button>
                       <button
                         onClick={() => startConsultation(c.id)}
-                        className="px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                        disabled={startingCall === c.id}
+                        className="px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors disabled:opacity-50"
                       >
-                        상담 시작
+                        {startingCall === c.id ? '연결 중...' : '화상 상담'}
                       </button>
                     </div>
                   </div>

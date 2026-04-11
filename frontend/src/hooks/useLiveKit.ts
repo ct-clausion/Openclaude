@@ -1,4 +1,12 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import {
+  Room,
+  RoomEvent,
+  Track,
+  RemoteTrackPublication,
+  RemoteParticipant,
+  LocalTrackPublication,
+} from 'livekit-client';
 
 interface UseLiveKitOptions {
   consultationId: number;
@@ -12,7 +20,7 @@ interface UseLiveKitReturn {
   remoteVideoRef: React.RefObject<HTMLVideoElement | null>;
   isMicEnabled: boolean;
   isCameraEnabled: boolean;
-  connect: () => Promise<void>;
+  connect: (token?: string, roomName?: string) => Promise<void>;
   disconnect: () => void;
   toggleMic: () => void;
   toggleCamera: () => void;
@@ -31,93 +39,126 @@ export function useLiveKit({
 
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
   const remoteVideoRef = useRef<HTMLVideoElement | null>(null);
-  const localStreamRef = useRef<MediaStream | null>(null);
+  const roomRef = useRef<Room | null>(null);
 
-  const connect = useCallback(async () => {
-    if (isConnected || isConnecting) return;
-
-    setIsConnecting(true);
-    setError(null);
-
-    try {
-      // 1. Request LiveKit token from backend
-      const BASE_URL = import.meta.env.VITE_API_URL ?? '';
-      const token = localStorage.getItem('token');
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-      };
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+  const attachRemoteTrack = useCallback(
+    (publication: RemoteTrackPublication) => {
+      if (!publication.track) return;
+      if (
+        publication.track.kind === Track.Kind.Video &&
+        remoteVideoRef.current
+      ) {
+        publication.track.attach(remoteVideoRef.current);
       }
+      if (publication.track.kind === Track.Kind.Audio) {
+        const el = publication.track.attach();
+        document.body.appendChild(el);
+      }
+    },
+    [],
+  );
 
-      let _livekitToken: string | null = null;
+  const connect = useCallback(
+    async (preToken?: string, preRoomName?: string) => {
+      if (isConnected || isConnecting) return;
+
+      setIsConnecting(true);
+      setError(null);
+
       try {
-        const res = await fetch(`${BASE_URL}/api/livekit/token`, {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ consultationId, role }),
-        });
-        if (res.ok) {
+        const BASE_URL = import.meta.env.VITE_API_URL ?? '';
+        const jwt = localStorage.getItem('token');
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+        };
+        if (jwt) headers['Authorization'] = `Bearer ${jwt}`;
+
+        let livekitToken = preToken;
+        if (!livekitToken) {
+          const res = await fetch(`${BASE_URL}/api/livekit/token`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ consultationId, role }),
+          });
+          if (!res.ok) throw new Error('토큰 발급 실패');
           const data = await res.json();
-          _livekitToken = data.token;
+          livekitToken = data.token;
         }
-      } catch {
-        // Backend may not be available; continue with local-only demo mode
-      }
 
-      // 2. Get local media stream
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
+        const livekitUrl =
+          import.meta.env.VITE_LIVEKIT_URL ?? 'ws://localhost:7880';
 
-      localStreamRef.current = stream;
+        const room = new Room();
+        roomRef.current = room;
 
-      // 3. Attach local stream to local video element
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
+        // Remote participant events
+        room.on(
+          RoomEvent.TrackSubscribed,
+          (track, publication, participant) => {
+            if (track.kind === Track.Kind.Video && remoteVideoRef.current) {
+              track.attach(remoteVideoRef.current);
+            }
+            if (track.kind === Track.Kind.Audio) {
+              const el = track.attach();
+              document.body.appendChild(el);
+            }
+          },
+        );
 
-      // 4. In a full implementation, we would connect to LiveKit server
-      //    using _livekitToken. For demo, we mirror local to remote after delay
-      //    to simulate a remote participant.
-      if (!_livekitToken) {
-        setTimeout(() => {
-          if (remoteVideoRef.current && localStreamRef.current) {
-            // Clone the local stream for demo "remote" view
-            remoteVideoRef.current.srcObject = localStreamRef.current;
+        room.on(RoomEvent.TrackUnsubscribed, (track) => {
+          track.detach();
+        });
+
+        room.on(RoomEvent.Disconnected, () => {
+          setIsConnected(false);
+        });
+
+        await room.connect(livekitUrl, livekitToken!);
+
+        // Publish local camera & mic
+        await room.localParticipant.enableCameraAndMicrophone();
+
+        // Attach local video
+        const localPubs = room.localParticipant.videoTrackPublications;
+        localPubs.forEach((pub: LocalTrackPublication) => {
+          if (pub.track && localVideoRef.current) {
+            pub.track.attach(localVideoRef.current);
           }
-        }, 1500);
-      }
+        });
 
-      setIsConnected(true);
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to connect';
-      if (message.includes('NotAllowedError') || message.includes('Permission')) {
-        setError('카메라/마이크 접근 권한이 필요합니다.');
-      } else {
-        setError(message);
+        // Attach already-connected remote participants
+        room.remoteParticipants.forEach((participant: RemoteParticipant) => {
+          participant.trackPublications.forEach((pub) => {
+            if (pub.isSubscribed) attachRemoteTrack(pub);
+          });
+        });
+
+        setIsConnected(true);
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : 'Failed to connect';
+        if (
+          message.includes('NotAllowedError') ||
+          message.includes('Permission')
+        ) {
+          setError('카메라/마이크 접근 권한이 필요합니다.');
+        } else {
+          setError(message);
+        }
+      } finally {
+        setIsConnecting(false);
       }
-    } finally {
-      setIsConnecting(false);
-    }
-  }, [consultationId, role, isConnected, isConnecting]);
+    },
+    [consultationId, role, isConnected, isConnecting, attachRemoteTrack],
+  );
 
   const disconnect = useCallback(() => {
-    // Stop all tracks
-    if (localStreamRef.current) {
-      localStreamRef.current.getTracks().forEach((track) => track.stop());
-      localStreamRef.current = null;
+    if (roomRef.current) {
+      roomRef.current.disconnect();
+      roomRef.current = null;
     }
-
-    // Clear video elements
-    if (localVideoRef.current) {
-      localVideoRef.current.srcObject = null;
-    }
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = null;
-    }
+    if (localVideoRef.current) localVideoRef.current.srcObject = null;
+    if (remoteVideoRef.current) remoteVideoRef.current.srcObject = null;
 
     setIsConnected(false);
     setIsMicEnabled(true);
@@ -125,31 +166,24 @@ export function useLiveKit({
   }, []);
 
   const toggleMic = useCallback(() => {
-    if (!localStreamRef.current) return;
-    const audioTracks = localStreamRef.current.getAudioTracks();
-    const newState = !isMicEnabled;
-    audioTracks.forEach((track) => {
-      track.enabled = newState;
-    });
-    setIsMicEnabled(newState);
+    if (!roomRef.current) return;
+    const next = !isMicEnabled;
+    roomRef.current.localParticipant.setMicrophoneEnabled(next);
+    setIsMicEnabled(next);
   }, [isMicEnabled]);
 
   const toggleCamera = useCallback(() => {
-    if (!localStreamRef.current) return;
-    const videoTracks = localStreamRef.current.getVideoTracks();
-    const newState = !isCameraEnabled;
-    videoTracks.forEach((track) => {
-      track.enabled = newState;
-    });
-    setIsCameraEnabled(newState);
+    if (!roomRef.current) return;
+    const next = !isCameraEnabled;
+    roomRef.current.localParticipant.setCameraEnabled(next);
+    setIsCameraEnabled(next);
   }, [isCameraEnabled]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach((track) => track.stop());
-        localStreamRef.current = null;
+      if (roomRef.current) {
+        roomRef.current.disconnect();
+        roomRef.current = null;
       }
     };
   }, []);

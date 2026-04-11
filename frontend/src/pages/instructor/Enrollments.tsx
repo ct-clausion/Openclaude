@@ -43,6 +43,7 @@ export default function Enrollments() {
     mutationFn: (enrollmentId: number) => instructorApi.approveEnrollment(courseId!, enrollmentId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['instructor', 'enrollments', courseId] });
+      queryClient.invalidateQueries({ queryKey: ['instructor', 'students', courseId] });
       setConfirm(null);
     },
   });

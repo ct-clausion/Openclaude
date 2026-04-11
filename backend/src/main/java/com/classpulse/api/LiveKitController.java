@@ -5,10 +5,12 @@ import com.classpulse.domain.consultation.Consultation;
 import com.classpulse.domain.consultation.ConsultationRepository;
 import com.classpulse.domain.user.User;
 import com.classpulse.domain.user.UserService;
+import com.classpulse.notification.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import io.jsonwebtoken.Jwts;
@@ -26,6 +28,7 @@ public class LiveKitController {
 
     private final ConsultationRepository consultationRepository;
     private final UserService userService;
+    private final NotificationService notificationService;
 
     @Value("${app.livekit.api-key:devkey}")
     private String livekitApiKey;
@@ -77,6 +80,7 @@ public class LiveKitController {
     }
 
     @PostMapping("/api/consultations/{id}/start-video")
+    @Transactional
     public ResponseEntity<VideoSessionResponse> startVideo(@PathVariable Long id) {
         Long userId = SecurityUtil.getCurrentUserId();
         User user = userService.findById(userId);
@@ -92,6 +96,23 @@ public class LiveKitController {
 
         String token = generateLiveKitToken(roomName, user.getName());
         log.info("Started video session for consultation {} in room {}", id, roomName);
+
+        // Send INCOMING_CALL notification to the student
+        Long studentId = consultation.getStudent().getId();
+        notificationService.createNotification(
+                studentId,
+                "INCOMING_CALL",
+                user.getName() + " 강사님이 화상 상담을 요청합니다",
+                consultation.getCourse() != null
+                        ? consultation.getCourse().getTitle() + " 과목 상담"
+                        : "화상 상담",
+                Map.of(
+                        "consultationId", id,
+                        "roomName", roomName,
+                        "callerName", user.getName(),
+                        "callerId", userId
+                )
+        );
 
         return ResponseEntity.ok(new VideoSessionResponse(id, roomName, "IN_PROGRESS", token));
     }

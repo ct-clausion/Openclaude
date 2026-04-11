@@ -7,6 +7,7 @@ import com.classpulse.domain.course.CourseEnrollmentRepository;
 import com.classpulse.domain.course.CourseRepository;
 import com.classpulse.domain.twin.StudentTwin;
 import com.classpulse.domain.twin.StudentTwinRepository;
+import com.classpulse.domain.twin.TwinService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +24,7 @@ public class InstructorStudentController {
     private final StudentTwinRepository twinRepository;
     private final CourseRepository courseRepository;
     private final CourseEnrollmentRepository enrollmentRepository;
+    private final TwinService twinService;
 
     // ── DTOs ──
 
@@ -80,8 +82,14 @@ public class InstructorStudentController {
     // ── Heatmap & Students ──
 
     @GetMapping("/course/{courseId}/heatmap")
-    @Transactional(readOnly = true)
+    @Transactional
     public ResponseEntity<List<HeatmapEntry>> getCourseHeatmap(@PathVariable Long courseId) {
+        // ACTIVE 수강생 Twin 보장
+        List<CourseEnrollment> activeEnrollments = enrollmentRepository.findByCourseIdAndStatus(courseId, "ACTIVE");
+        for (CourseEnrollment enrollment : activeEnrollments) {
+            twinService.getOrCreateTwin(enrollment.getStudent(), enrollment.getCourse());
+        }
+
         List<StudentTwin> twins = twinRepository.findByCourseId(courseId);
         List<HeatmapEntry> entries = twins.stream()
                 .map(HeatmapEntry::from)
@@ -91,8 +99,14 @@ public class InstructorStudentController {
     }
 
     @GetMapping("/course/{courseId}/students")
-    @Transactional(readOnly = true)
+    @Transactional
     public ResponseEntity<List<StudentTwinEntry>> getCourseStudents(@PathVariable Long courseId) {
+        // ACTIVE 수강생 중 Twin이 없는 학생이 있으면 자동 생성
+        List<CourseEnrollment> activeEnrollments = enrollmentRepository.findByCourseIdAndStatus(courseId, "ACTIVE");
+        for (CourseEnrollment enrollment : activeEnrollments) {
+            twinService.getOrCreateTwin(enrollment.getStudent(), enrollment.getCourse());
+        }
+
         List<StudentTwin> twins = twinRepository.findByCourseId(courseId);
         List<StudentTwinEntry> entries = twins.stream()
                 .map(StudentTwinEntry::from)
@@ -132,6 +146,10 @@ public class InstructorStudentController {
         }
         enrollment.setStatus("ACTIVE");
         enrollmentRepository.save(enrollment);
+
+        // 승인 시 StudentTwin 생성 → 학생 모니터링에 표시
+        twinService.getOrCreateTwin(enrollment.getStudent(), enrollment.getCourse());
+
         return ResponseEntity.ok(EnrollmentEntry.from(enrollment));
     }
 

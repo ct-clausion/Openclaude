@@ -17,6 +17,7 @@ import StudentNextStep from './pages/student/NextStep';
 import StudentStudyGroups from './pages/student/StudyGroups';
 import StudentGroupChat from './pages/student/GroupChat';
 import StudentCourseEnroll from './pages/student/CourseEnroll';
+import StudentVideoCall from './pages/student/VideoCall';
 
 // Instructor Pages
 import InstructorDashboard from './pages/instructor/Dashboard';
@@ -27,6 +28,7 @@ import StudentDetail from './pages/instructor/StudentDetail';
 import InstructorConsultations from './pages/instructor/Consultations';
 import Enrollments from './pages/instructor/Enrollments';
 import CourseCreate from './pages/instructor/CourseCreate';
+import InstructorVideoCall from './pages/instructor/VideoCall';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -79,6 +81,7 @@ export default function App() {
             <Route path="study-groups/:groupId/chat" element={<StudentGroupChat />} />
             <Route path="consultation" element={<StudentConsultation />} />
             <Route path="consultation/:id" element={<StudentConsultation />} />
+            <Route path="consultation/:consultationId/video" element={<StudentVideoCall />} />
             <Route path="next-step" element={<StudentNextStep />} />
           </Route>
 
@@ -100,6 +103,7 @@ export default function App() {
             <Route path="students/:studentId" element={<StudentDetail />} />
             <Route path="consultations" element={<InstructorConsultations />} />
             <Route path="consultation/:id" element={<InstructorConsultations />} />
+            <Route path="consultation/:consultationId/video" element={<InstructorVideoCall />} />
           </Route>
 
           {/* Catch-all */}
