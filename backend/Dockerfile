@@ -10,9 +10,9 @@ COPY gradle ./gradle
 # Download dependencies (cached layer)
 RUN gradle dependencies --no-daemon || true
 
-# Copy source and build - no cache
+# Force no-cache: v5
 COPY src ./src
-RUN gradle bootJar --no-daemon -x test
+RUN gradle bootJar --no-daemon -x test && ls -la build/libs/
 
 # ── Stage 2: Runtime ─────────────────────────────────
 FROM eclipse-temurin:17-jre-alpine
