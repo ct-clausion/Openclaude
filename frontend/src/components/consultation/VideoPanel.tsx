@@ -7,6 +7,7 @@ interface VideoPanelProps {
   role?: 'student' | 'instructor';
   onEndCall?: () => void;
   preToken?: string;
+  preRoomName?: string;
 }
 
 export default function VideoPanel({
@@ -14,6 +15,7 @@ export default function VideoPanel({
   role = 'student',
   onEndCall,
   preToken,
+  preRoomName,
 }: VideoPanelProps) {
   const {
     isConnected,
@@ -31,7 +33,7 @@ export default function VideoPanel({
 
   // Auto-connect on mount (use preToken from start-video if available)
   useEffect(() => {
-    connect(preToken);
+    connect(preToken, preRoomName);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

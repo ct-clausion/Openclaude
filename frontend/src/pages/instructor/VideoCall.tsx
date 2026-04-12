@@ -34,6 +34,7 @@ export default function InstructorVideoCall() {
         role="instructor"
         onEndCall={handleEndCall}
         preToken={state?.token}
+        preRoomName={state?.roomName}
       />
     </div>
   );

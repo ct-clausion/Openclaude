@@ -88,8 +88,11 @@ public class LiveKitController {
         Consultation consultation = consultationRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Consultation not found: " + id));
 
-        // Generate a unique room name for this consultation
-        String roomName = "consultation-" + id + "-" + UUID.randomUUID().toString().substring(0, 8);
+        // Reuse existing room name if already set, otherwise generate a new one
+        String roomName = consultation.getVideoRoomName();
+        if (roomName == null || roomName.isBlank()) {
+            roomName = "consultation-" + id + "-" + UUID.randomUUID().toString().substring(0, 8);
+        }
         consultation.setVideoRoomName(roomName);
         consultation.setStatus("IN_PROGRESS");
         consultationRepository.save(consultation);

@@ -75,7 +75,7 @@ export function useLiveKit({
   );
 
   const connect = useCallback(
-    async (preToken?: string, _preRoomName?: string) => {
+    async (preToken?: string, preRoomName?: string) => {
       if (isConnectedRef.current || isConnectingRef.current) return;
 
       isConnectingRef.current = true;
@@ -95,7 +95,7 @@ export function useLiveKit({
           const res = await fetch(`${BASE_URL}/api/livekit/token`, {
             method: 'POST',
             headers,
-            body: JSON.stringify({ consultationId, role }),
+            body: JSON.stringify({ consultationId, role, roomName: preRoomName }),
           });
           if (!res.ok) throw new Error('토큰 발급 실패');
           const data = await res.json();

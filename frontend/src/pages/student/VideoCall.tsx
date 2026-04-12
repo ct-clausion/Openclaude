@@ -1,8 +1,10 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import VideoPanel from '../../components/consultation/VideoPanel';
 
 export default function VideoCall() {
   const { consultationId } = useParams<{ consultationId: string }>();
+  const [searchParams] = useSearchParams();
+  const roomName = searchParams.get('room') ?? undefined;
   const navigate = useNavigate();
 
   const handleEndCall = () => {
@@ -31,6 +33,7 @@ export default function VideoCall() {
         consultationId={Number(consultationId)}
         role="student"
         onEndCall={handleEndCall}
+        preRoomName={roomName}
       />
     </div>
   );
