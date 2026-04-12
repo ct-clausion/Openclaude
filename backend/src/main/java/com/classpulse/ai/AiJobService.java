@@ -49,12 +49,12 @@ public class AiJobService {
     // ── Question Generation ──────────────────────────────────────────────
 
     @Async("aiTaskExecutor")
-    public void runQuestionGeneration(Long courseId, String difficulty, int count) {
+    public void runQuestionGeneration(Long courseId, Long skillId, String difficulty, int count) {
         AsyncJob job = createJob("QUESTION_GENERATION",
-                Map.of("courseId", courseId, "difficulty", difficulty, "count", count));
+                Map.of("courseId", courseId, "skillId", skillId != null ? skillId : 0, "difficulty", difficulty, "count", count));
         try {
-            log.info("[AI Job {}] 문제 생성 시작 - courseId={}, difficulty={}", job.getId(), courseId, difficulty);
-            Map<String, Object> result = questionGenerator.generate(courseId, difficulty, count);
+            log.info("[AI Job {}] 문제 생성 시작 - courseId={}, skillId={}, difficulty={}", job.getId(), courseId, skillId, difficulty);
+            Map<String, Object> result = questionGenerator.generate(courseId, skillId, difficulty, count);
             completeJob(job, result);
             log.info("[AI Job {}] 문제 생성 완료 - {} 문제 생성됨", job.getId(), result.get("generatedCount"));
         } catch (Exception e) {
