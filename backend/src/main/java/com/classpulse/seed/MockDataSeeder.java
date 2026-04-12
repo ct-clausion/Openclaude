@@ -248,12 +248,12 @@ public class MockDataSeeder implements CommandLineRunner {
         }
         log.info("[Seed] Reflections done");
 
-        // ── Consultations (5-8 per student, total ~600) ───────────────
+        // ── Consultations (5-8 per student) ───────────────────────────
         for (int i = 0; i < N; i++) {
             int ci = i < 70 ? 0 : (i < 90 ? 1 : 2);
             int cnt = 5 + rng.nextInt(4);
             for (int c = 0; c < cnt; c++) {
-                boolean done = c < cnt - 2; // last 2 are scheduled
+                boolean done = c < cnt - 2;
                 User instr = ins[c % 3];
                 Consultation.ConsultationBuilder cb = Consultation.builder()
                         .student(stu[i]).instructor(instr).course(cs[ci])
@@ -263,7 +263,7 @@ public class MockDataSeeder implements CommandLineRunner {
                 if (done) {
                     cb.completedAt(LocalDateTime.now().minusDays(c * 3));
                     cb.summaryText(stu[i].getName() + " 학생과 취약 영역 보충 및 학습 전략을 논의함. 단계별 액션플랜 수립 완료.");
-                    cb.causeAnalysis("실습 시간 부족과 기초 개념 미흡이 주요 원인으로 파악됨. 자기주도 학습 습관 형성이 핵심.");
+                    cb.causeAnalysis("실습 시간 부족과 기초 개념 미흡이 주요 원인으로 파악됨.");
                 } else {
                     cb.briefingJson(Map.of("twinSummary", "학습 현황 점검 예정", "suggestedTopics", List.of("취약 영역 보강", "학습 목표 재설정")));
                 }
@@ -277,8 +277,7 @@ public class MockDataSeeder implements CommandLineRunner {
                                 .consultation(saved).student(stu[i]).course(cs[ci])
                                 .title(apTitles[a % apTitles.length]).description("상담 결과에 따른 액션플랜입니다.")
                                 .dueDate(LocalDate.now().plusDays(3 + a * 3))
-                                .priority(a == 0 ? "HIGH" : "MEDIUM").status(apStats[a % apStats.length])
-                                .build());
+                                .priority(a == 0 ? "HIGH" : "MEDIUM").status(apStats[a % apStats.length]).build());
                     }
                 }
             }
@@ -329,7 +328,6 @@ public class MockDataSeeder implements CommandLineRunner {
                     .totalXpEarned(lvl * 250 + rng.nextInt(500)).build());
             int bc = Math.min(lvl / 2, badges.size());
             for (int b = 0; b < bc; b++) studentBadgeRepository.save(StudentBadge.builder().student(stu[i]).badge(badges.get(b)).build());
-            // 20-30 XP events per student
             int ec = 20 + rng.nextInt(11);
             for (int e = 0; e < ec; e++) {
                 int idx = rng.nextInt(evTypes.length);
@@ -338,12 +336,12 @@ public class MockDataSeeder implements CommandLineRunner {
         }
         log.info("[Seed] Gamification done");
 
-        // ── Chatbot Conversations (all 100 students, 2-3 convs each) ──
+        // ── Chatbot Conversations (all 100 students, 2-3 each) ────────
         String[][] chatQ = {
-                {"이해가 안 되는 부분이 있어요. 도와주세요.","물론이죠! 어떤 부분이 어려우신가요? 기본 개념부터 설명해드릴게요."},
+                {"이해가 안 되는 부분이 있어요.","물론이죠! 어떤 부분이 어려우신가요? 기본 개념부터 설명해드릴게요."},
                 {"실습에서 자꾸 에러가 나요.","디버깅은 체계적으로 접근하면 됩니다. 에러 메시지를 먼저 읽어보세요."},
                 {"이 개념을 쉽게 설명해줄 수 있나요?","좋은 질문이에요! 일상 비유로 설명할게요."},
-                {"복습 계획을 세워주세요.","현재 트윈 데이터를 기반으로 맞춤형 복습 계획을 만들어드릴게요."},
+                {"복습 계획을 세워주세요.","현재 트윈 데이터 기반으로 맞춤형 복습 계획을 만들어드릴게요."},
                 {"코드 리뷰해줄 수 있나요?","물론이죠! 코드를 보내주시면 개선점을 알려드릴게요."},
                 {"시험 준비 어떻게 하면 좋을까요?","핵심 개념 정리 → 실습 → 모의 문제 순서로 준비하세요."},
         };
@@ -356,7 +354,7 @@ public class MockDataSeeder implements CommandLineRunner {
                 Conversation conv = conversationRepository.save(Conversation.builder()
                         .student(stu[i]).course(cs[ci]).title(sk.getName() + " 학습 도우미").status("ACTIVE")
                         .twinContextJson(Map.of("currentSkill", sk.getName())).build());
-                int msgCnt = 4 + rng.nextInt(4); // 4-7 messages
+                int msgCnt = 4 + rng.nextInt(4);
                 for (int msg = 0; msg < msgCnt; msg++) {
                     int qi = msg / 2 % chatQ.length;
                     boolean isUser = msg % 2 == 0;
@@ -368,7 +366,7 @@ public class MockDataSeeder implements CommandLineRunner {
                 }
             }
         }
-        log.info("[Seed] Chatbot conversations done");
+        log.info("[Seed] Chatbot done");
 
         // ── Code Submissions (8-12 per student, all 100) ──────────────
         String[][] codeTpl = {
@@ -379,16 +377,16 @@ public class MockDataSeeder implements CommandLineRunner {
                 {"python","import pandas as pd\n\ndef analyze(df):\n    return df.groupby('category').agg({'value': ['mean', 'std', 'count']})"},
                 {"java","@GetMapping(\"/api/users\")\npublic ResponseEntity<List<UserDto>> getUsers() {\n    return ResponseEntity.ok(userService.findAll());\n}"},
                 {"java","public int binarySearch(int[] arr, int target) {\n    int lo = 0, hi = arr.length - 1;\n    while (lo <= hi) {\n        int mid = (lo + hi) / 2;\n        if (arr[mid] == target) return mid;\n        else if (arr[mid] < target) lo = mid + 1;\n        else hi = mid - 1;\n    }\n    return -1;\n}"},
-                {"typescript","interface User {\n  id: number;\n  name: string;\n  email: string;\n}\n\nconst getUser = async (id: number): Promise<User> => {\n  const res = await fetch(`/api/users/${id}`);\n  return res.json();\n}"},
+                {"typescript","interface User {\n  id: number;\n  name: string;\n}\nconst getUser = async (id: number): Promise<User> => {\n  const res = await fetch(`/api/users/${id}`);\n  return res.json();\n}"},
         };
         String[][] fbTpl = {
                 {"GOOD","코드 구조가 깔끔합니다.","현재 상태를 유지하세요."},
                 {"WARNING","에러 핸들링이 부족합니다.","try-catch 블록을 추가하세요."},
                 {"ERROR","무한 재귀 위험이 있습니다.","기저 조건을 명확히 하세요."},
                 {"INFO","성능 최적화 여지가 있습니다.","메모이제이션을 고려해보세요."},
-                {"GOOD","RESTful 원칙을 잘 따르고 있습니다.","이 패턴을 계속 유지하세요."},
+                {"GOOD","RESTful 원칙을 잘 따릅니다.","이 패턴을 유지하세요."},
                 {"WARNING","변수명이 모호합니다.","의미 있는 이름을 사용하세요."},
-                {"INFO","함수 분리를 고려해보세요.","단일 책임 원칙을 적용하면 좋습니다."},
+                {"INFO","함수 분리를 고려해보세요.","단일 책임 원칙을 적용하세요."},
                 {"GOOD","타입 정의가 잘 되어 있습니다.","TypeScript 활용이 우수합니다."},
         };
         for (int i = 0; i < N; i++) {
@@ -433,15 +431,13 @@ public class MockDataSeeder implements CommandLineRunner {
                     .maxMembers(5).status("ACTIVE").createdBy(stu[li]).build();
             em.persist(grp);
             addMember(grp, stu[li], "LEADER", "그룹 리더", bd(0.95));
-            for (int m = 1; m <= 3; m++) {
-                int mi = (li + m) % N;
+            for (int m2 = 1; m2 <= 3; m2++) {
+                int mi = (li + m2) % N;
                 addMember(grp, stu[mi], "MEMBER", "적극 참여자", bd(0.70 + rng.nextDouble() * 0.25));
             }
         }
         em.flush();
-        log.info("[Seed] Study groups done");
-
-        log.info("[Seed] Complete! {} students, 3 courses, full data across all tabs.", N);
+        log.info("[Seed] Complete! {} students, 3 courses, all tabs populated.", N);
     }
 
     // ── Helpers ────────────────────────────────────────────────────────
