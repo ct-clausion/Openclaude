@@ -29,7 +29,7 @@ public class FileUploadController {
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
 
-    @Value("${app.aws.s3.bucket}")
+    @Value("${app.aws.s3.bucket:gb-ljs}")
     private String bucket;
 
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB

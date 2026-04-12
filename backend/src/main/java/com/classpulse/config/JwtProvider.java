@@ -21,10 +21,10 @@ import java.util.stream.Collectors;
 @Component
 public class JwtProvider {
 
-    @Value("${app.jwt.secret}")
+    @Value("${app.jwt.secret:default-secret-key-change-in-production-must-be-at-least-256-bits-long}")
     private String secret;
 
-    @Value("${app.jwt.expiration}")
+    @Value("${app.jwt.expiration:86400000}")
     private long expirationMs;
 
     private SecretKey signingKey;

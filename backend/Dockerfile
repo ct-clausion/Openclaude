@@ -10,9 +10,8 @@ COPY gradle ./gradle
 # Download dependencies (cached layer)
 RUN gradle dependencies --no-daemon || true
 
-# Copy source and build
+# Copy source and build - no cache
 COPY src ./src
-ARG CACHEBUST=1
 RUN gradle bootJar --no-daemon -x test
 
 # ── Stage 2: Runtime ─────────────────────────────────
@@ -28,8 +27,5 @@ RUN chown appuser:appgroup app.jar
 USER appuser
 
 EXPOSE 8080
-
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-  CMD wget -qO- http://localhost:8080/actuator/health || exit 1
 
 ENTRYPOINT ["java", "-jar", "app.jar"]
