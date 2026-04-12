@@ -4,10 +4,14 @@ import RiskHeatmap from '../../components/instructor/RiskHeatmap';
 import UpcomingConsultationPanel from '../../components/instructor/UpcomingConsultationPanel';
 import QuestionReviewPanel from '../../components/instructor/QuestionReviewPanel';
 import CourseProgressChart from '../../components/instructor/CourseProgressChart';
+import { useAuthStore } from '../../store/authStore';
+import { getDisplayInitial } from '../../utils/userDisplay';
 
 export default function InstructorDashboard() {
+  const { user } = useAuthStore();
   const dangerCount = 4; // In production, derive from query
   const [showRiskLegend, setShowRiskLegend] = useState(false);
+  const displayName = user?.name ?? '강사';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
@@ -16,11 +20,11 @@ export default function InstructorDashboard() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-bold text-indigo-700">
-              김
+              {getDisplayInitial(displayName)}
             </div>
             <div>
-              <h1 className="text-base font-bold text-slate-800">김교수님의 대시보드</h1>
-              <p className="text-xs text-slate-500">React 심화 과정 · 6주차</p>
+              <h1 className="text-base font-bold text-slate-800">{displayName}님의 대시보드</h1>
+              <p className="text-xs text-slate-500">담당 과정과 학생 위험 신호를 확인하세요</p>
             </div>
           </div>
 

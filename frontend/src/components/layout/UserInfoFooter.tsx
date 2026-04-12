@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
 import { useNavigate } from 'react-router-dom';
+import { ROLE_LABELS, getDisplayInitial } from '../../utils/userDisplay';
 
 export default function UserInfoFooter() {
   const { user, logout } = useAuthStore();
@@ -11,13 +12,7 @@ export default function UserInfoFooter() {
 
   if (!user) return null;
 
-  const roleLabel: Record<string, string> = {
-    STUDENT: '학생',
-    INSTRUCTOR: '강사',
-    OPERATOR: 'OPERATOR',
-  };
-
-  const initial = user.name.charAt(0).toUpperCase();
+  const initial = getDisplayInitial(user.name);
 
   const handleLogout = () => {
     logout();
@@ -40,7 +35,7 @@ export default function UserInfoFooter() {
               <div className="p-3 border-b border-slate-100">
                 <p className="text-xs font-bold text-slate-800">{user.name}</p>
                 <p className="text-[11px] text-slate-400">{user.email}</p>
-                <p className="text-[10px] text-indigo-500 font-medium mt-0.5">{roleLabel[user.role] ?? user.role}</p>
+                <p className="text-[10px] text-indigo-500 font-medium mt-0.5">{ROLE_LABELS[user.role] ?? user.role}</p>
               </div>
               <div className="py-1">
                 <button
@@ -82,7 +77,7 @@ export default function UserInfoFooter() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-slate-800 truncate">{user.name}</p>
-              <p className="text-[11px] text-slate-400">{roleLabel[user.role] ?? user.role}</p>
+              <p className="text-[11px] text-slate-400">{ROLE_LABELS[user.role] ?? user.role}</p>
             </div>
             <svg
               className={`w-3.5 h-3.5 text-slate-400 transition-transform ${showMenu ? 'rotate-180' : ''}`}

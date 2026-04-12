@@ -1,11 +1,6 @@
 import { useState } from 'react';
 import { useAuthStore } from '../store/authStore';
-
-const ROLE_LABEL: Record<string, string> = {
-  STUDENT: '학생',
-  INSTRUCTOR: '강사',
-  OPERATOR: '운영자',
-};
+import { ROLE_LABELS, getDisplayInitial } from '../utils/userDisplay';
 
 export default function Profile() {
   const { user } = useAuthStore();
@@ -77,14 +72,14 @@ export default function Profile() {
         <div className="bg-white/85 backdrop-blur-[12px] border border-white/60 rounded-2xl shadow-lg p-6">
           <h2 className="text-sm font-semibold text-slate-700 mb-4">프로필 정보</h2>
           <div className="flex items-center gap-4 mb-5">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
-              {user.name.charAt(0).toUpperCase()}
-            </div>
+              <div className="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center text-white text-xl font-bold flex-shrink-0">
+              {getDisplayInitial(user.name)}
+              </div>
             <div>
               <p className="text-base font-bold text-slate-800">{user.name}</p>
               <p className="text-sm text-slate-500">{user.email}</p>
               <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-medium">
-                {ROLE_LABEL[user.role] ?? user.role}
+                {ROLE_LABELS[user.role] ?? user.role}
               </span>
             </div>
           </div>
@@ -100,7 +95,7 @@ export default function Profile() {
             </div>
             <div className="flex items-center justify-between py-3 border-t border-slate-100">
               <span className="text-xs font-medium text-slate-500">역할</span>
-              <span className="text-sm text-slate-800">{ROLE_LABEL[user.role] ?? user.role}</span>
+              <span className="text-sm text-slate-800">{ROLE_LABELS[user.role] ?? user.role}</span>
             </div>
           </div>
         </div>
@@ -113,6 +108,7 @@ export default function Profile() {
               <label className="block text-xs font-medium text-slate-600 mb-1">현재 비밀번호</label>
               <input
                 type="password"
+                autoComplete="current-password"
                 required
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
@@ -124,6 +120,7 @@ export default function Profile() {
               <label className="block text-xs font-medium text-slate-600 mb-1">새 비밀번호</label>
               <input
                 type="password"
+                autoComplete="new-password"
                 required
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
@@ -135,6 +132,7 @@ export default function Profile() {
               <label className="block text-xs font-medium text-slate-600 mb-1">새 비밀번호 확인</label>
               <input
                 type="password"
+                autoComplete="new-password"
                 required
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}

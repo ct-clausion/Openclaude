@@ -6,6 +6,7 @@ import { recommendationsApi } from '../../api/recommendations';
 import { useCourseId } from '../../hooks/useCourseId';
 import { useAuthStore } from '../../store/authStore';
 import type { Recommendation } from '../../types';
+import { getRecommendationAction } from '../../utils/recommendations';
 
 const MOCK_RECS: Recommendation[] = [
   {
@@ -199,6 +200,7 @@ const NextStep: React.FC = () => {
               TYPE_CONFIG[rec.recommendationType] ?? TYPE_CONFIG.review;
             const triggerLabel =
               TRIGGER_LABELS[rec.triggerEvent] ?? rec.triggerEvent;
+            const action = getRecommendationAction(rec.recommendationType);
 
             return (
               <motion.div
@@ -245,16 +247,10 @@ const NextStep: React.FC = () => {
                         예상 효과: {rec.expectedOutcome}
                       </p>
                       <button
-                        onClick={() => {
-                          const type = rec.recommendationType?.toUpperCase();
-                          if (type === 'REVIEW') navigate('/student/review');
-                          else if (type === 'CONSULTATION' || type === 'COURSE') navigate('/student/consultation');
-                          else if (type === 'PRACTICE' || type === 'CHALLENGE') navigate('/student/review');
-                          else navigate('/student/review');
-                        }}
+                        onClick={() => navigate(action.path)}
                         className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 transition-colors"
                       >
-                        시작하기
+                        {action.label}
                       </button>
                     </div>
                   </div>

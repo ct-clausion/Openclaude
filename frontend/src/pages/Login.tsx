@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
+import { ROLE_LABELS } from '../utils/userDisplay';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -19,6 +20,11 @@ export default function Login() {
 
     try {
       const user = await login(email, password);
+      if (user.role !== role) {
+        useAuthStore.getState().logout();
+        setError(`${ROLE_LABELS[role]} 계정이 아닙니다. 선택한 역할로 다시 로그인해주세요.`);
+        return;
+      }
       navigate(`/${user.role.toLowerCase()}`);
     } catch {
       setError('로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
@@ -91,6 +97,7 @@ export default function Login() {
               <input
                 id="email"
                 type="email"
+                autoComplete="username"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -107,10 +114,11 @@ export default function Login() {
               <input
                 id="password"
                 type="password"
+                autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="\•\•\•\•\•\•\•\•"
+                placeholder="••••••••"
                 className="w-full px-4 py-2.5 rounded-lg border border-slate-300 bg-white text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-400 transition-all"
               />
             </div>

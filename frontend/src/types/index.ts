@@ -329,12 +329,12 @@ export interface LoginResponse {
   user: User;
 }
 
-// OPERATOR accounts are provisioned via admin/seed data, not self-registration
 export interface RegisterRequest {
   email: string;
   password: string;
   name: string;
-  role: 'STUDENT' | 'INSTRUCTOR';
+  role: 'STUDENT' | 'INSTRUCTOR' | 'OPERATOR';
+  inviteCode?: string;
 }
 
 // ── Operator Types ──────────────────────────────────────────

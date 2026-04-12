@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { recommendationsApi } from '../../api/recommendations';
 import { useAuthStore } from '../../store/authStore';
 import type { Recommendation } from '../../types';
+import { getRecommendationAction } from '../../utils/recommendations';
 
 const MOCK_RECS: Recommendation[] = [
   {
@@ -75,6 +76,7 @@ const NextStepPrescriptionCard: React.FC = () => {
         {list.map((rec, i) => {
           const style = TYPE_STYLES[rec.recommendationType] ?? TYPE_STYLES.review;
           const isFirst = i === 0;
+          const action = getRecommendationAction(rec.recommendationType);
           return (
             <motion.div
               key={rec.id}
@@ -108,15 +110,10 @@ const NextStepPrescriptionCard: React.FC = () => {
                   </p>
                 </div>
                 <button
-                  onClick={() => {
-                    const type = rec.recommendationType?.toUpperCase();
-                    if (type === 'REVIEW') navigate('/student/review');
-                    else if (type === 'CONSULTATION') navigate('/student/consultation');
-                    else navigate('/student/review');
-                  }}
+                  onClick={() => navigate(action.path)}
                   className="shrink-0 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-medium text-indigo-600 hover:bg-indigo-100 transition-colors"
                 >
-                  시작
+                  {action.label}
                 </button>
               </div>
             </motion.div>

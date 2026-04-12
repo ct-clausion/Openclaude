@@ -6,6 +6,7 @@ application-local.yml
 .env.production
 .claude-octopus
 .claude
+.playwright-mcp
 
 ### macOS ###
 .DS_Store
