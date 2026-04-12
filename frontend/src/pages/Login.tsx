@@ -146,6 +146,12 @@ export default function Login() {
               회원가입
             </Link>
           </p>
+          <p className="text-center text-sm text-slate-400 mt-2">
+            운영자이신가요?{' '}
+            <Link to="/operator/login" className="text-slate-600 font-medium hover:text-slate-800">
+              운영자 전용 페이지
+            </Link>
+          </p>
         </div>
       </div>
     </div>
