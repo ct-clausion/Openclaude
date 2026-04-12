@@ -1,0 +1,31 @@
+spring:
+  jpa:
+    show-sql: false
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+
+app:
+  rabbitmq:
+    enabled: false
+
+  livekit:
+    url: ${LIVEKIT_URL:ws://localhost:7880}
+
+  aws:
+    s3:
+      bucket: ${AWS_S3_BUCKET:gb-ljs}
+      region: ${AWS_REGION:ap-northeast-2}
+      access-key: ${AWS_ACCESS_KEY_ID:}
+      secret-key: ${AWS_SECRET_ACCESS_KEY:}
+
+logging:
+  level:
+    com.classpulse: INFO
+    org.springframework.security: WARN
+    org.hibernate.SQL: WARN
