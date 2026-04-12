@@ -1,0 +1,8 @@
+[   22186ms] [ERROR] EventSource's response has a MIME type ("text/html") that is not "text/event-stream". Aborting the connection. @ http://127.0.0.1:4175/student/profile:0
+[   22281ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "current-password"): (More info: https://goo.gl/9p2vKq) %o @ http://127.0.0.1:4175/student/profile:0
+[   22281ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) %o @ http://127.0.0.1:4175/student/profile:0
+[   22281ms] [VERBOSE] [DOM] Input elements should have autocomplete attributes (suggested: "new-password"): (More info: https://goo.gl/9p2vKq) %o @ http://127.0.0.1:4175/student/profile:0
+[   27189ms] [ERROR] EventSource's response has a MIME type ("text/html") that is not "text/event-stream". Aborting the connection. @ http://127.0.0.1:4175/student/profile:0
+[   32192ms] [ERROR] EventSource's response has a MIME type ("text/html") that is not "text/event-stream". Aborting the connection. @ http://127.0.0.1:4175/student/profile:0
+[   37196ms] [ERROR] EventSource's response has a MIME type ("text/html") that is not "text/event-stream". Aborting the connection. @ http://127.0.0.1:4175/student/profile:0
+[   42198ms] [ERROR] EventSource's response has a MIME type ("text/html") that is not "text/event-stream". Aborting the connection. @ http://127.0.0.1:4175/student/profile:0
