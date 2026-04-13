@@ -466,10 +466,10 @@ const Review: React.FC = () => {
                     className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {completeMutation.isPending
-                      ? '완료 처리 중...'
+                      ? '제출 중...'
                       : selectedTask?.status === 'COMPLETED'
-                        ? '완료됨'
-                        : '복습 완료 처리'}
+                        ? '제출됨'
+                        : '답안 제출'}
                   </button>
                 </div>
 
@@ -494,7 +494,7 @@ const Review: React.FC = () => {
                   </p>
                   <p className="mt-2 text-xs leading-6 text-slate-500">
                     점수, 강점, 보완점, 모범 답안을 한 번에 정리해 줍니다. 채점 후
-                    복습 완료 처리를 누르면 오늘의 할 일에서도 바로 반영됩니다.
+                    답안 제출을 누르면 오늘의 할 일에서도 바로 반영됩니다.
                   </p>
                 </div>
               ) : (
