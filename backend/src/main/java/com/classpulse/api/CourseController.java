@@ -120,7 +120,7 @@ public class CourseController {
 
     @PostMapping("/{id}/enroll")
     @Transactional
-    public ResponseEntity<EnrollResponse> enroll(@PathVariable Long id) {
+    public ResponseEntity<?> enroll(@PathVariable Long id) {
         Long userId = SecurityUtil.getCurrentUserId();
 
         if (enrollmentRepository.existsByCourseIdAndStudentId(id, userId)) {
