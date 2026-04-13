@@ -68,7 +68,8 @@ export default function AppShell({ role }: AppShellProps) {
     if (role !== 'student') return;
 
     const latest = notifications[0];
-    if (!latest || latest.isRead || latest.type !== 'CONSULTATION_SCHEDULED') return;
+    const consultationNotifTypes = ['CONSULTATION_SCHEDULED', 'CONSULTATION_ACCEPTED', 'CONSULTATION_REJECTED'];
+    if (!latest || latest.isRead || !consultationNotifTypes.includes(latest.type)) return;
 
     const key = latest.id ?? `${latest.createdAt ?? ''}_${latest.type}`;
     if (handledToastKeys.current.has(key)) return;
