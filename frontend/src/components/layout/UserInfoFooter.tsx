@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../store/authStore';
 import { useNavigate } from 'react-router-dom';
@@ -94,9 +95,9 @@ export default function UserInfoFooter() {
         <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
       )}
 
-      {/* Logout confirmation */}
-      {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Logout confirmation — portaled to body so it escapes sidebar stacking context */}
+      {showConfirm && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setShowConfirm(false)} />
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -120,7 +121,8 @@ export default function UserInfoFooter() {
               </button>
             </div>
           </motion.div>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );
