@@ -14,7 +14,7 @@ export default function InstructorDashboard() {
   const { user } = useAuthStore();
   const courseId = useCourseId();
   const { data: courses } = useCourses();
-  const currentCourse = courses?.find((c) => c.id === courseId);
+  const currentCourse = courses?.find((c) => String(c.id) === courseId);
   const [showRiskLegend, setShowRiskLegend] = useState(false);
   const displayName = user?.name ?? '강사';
 
