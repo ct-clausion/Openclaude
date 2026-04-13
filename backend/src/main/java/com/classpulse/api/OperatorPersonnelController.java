@@ -255,12 +255,15 @@ public class OperatorPersonnelController {
             int studentCount = courses.stream()
                     .mapToInt(c -> studentTwinRepository.findByCourseId(c.getId()).size())
                     .sum();
+            int totalCapacity = courses.stream()
+                    .mapToInt(c -> c.getMaxCapacity() != null ? c.getMaxCapacity() : 30)
+                    .sum();
             int consultationCount = consultationRepository
                     .findByInstructorIdOrderByScheduledAtDesc(instructor.getId()).size();
             int courseCount = courses.size();
 
             // Normalize each factor to 0-100 then weighted average
-            double studentLoad = Math.min(studentCount / 30.0, 1.0) * 100;
+            double studentLoad = totalCapacity > 0 ? Math.min((double) studentCount / totalCapacity, 1.0) * 100 : 0;
             double consultationLoad = Math.min(consultationCount / 20.0, 1.0) * 100;
             double courseLoad = Math.min(courseCount / 5.0, 1.0) * 100;
             double workloadScore = Math.min(studentLoad * 0.5 + consultationLoad * 0.3 + courseLoad * 0.2, 100.0);
@@ -270,6 +273,7 @@ public class OperatorPersonnelController {
             m.put("id", instructor.getId());
             m.put("name", instructor.getName());
             m.put("studentCount", studentCount);
+            m.put("totalCapacity", totalCapacity);
             m.put("consultationCount", consultationCount);
             m.put("courseCount", courseCount);
             m.put("workloadScore", round2(workloadScore));
