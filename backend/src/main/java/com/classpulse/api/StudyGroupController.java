@@ -144,6 +144,19 @@ public class StudyGroupController {
         return ResponseEntity.status(HttpStatus.CREATED).body(StudyGroupResponse.from(group));
     }
 
+    @GetMapping("/my")
+    public ResponseEntity<List<StudyGroupResponse>> myGroups() {
+        Long userId = SecurityUtil.getCurrentUserId();
+        List<StudyGroup> groups = studyGroupRepository.findByMemberStudentId(userId);
+        return ResponseEntity.ok(groups.stream().map(StudyGroupResponse::from).toList());
+    }
+
+    @GetMapping("/course/{courseId}")
+    public ResponseEntity<List<StudyGroupResponse>> byCourse(@PathVariable Long courseId) {
+        List<StudyGroup> groups = studyGroupRepository.findByCourseId(courseId);
+        return ResponseEntity.ok(groups.stream().map(StudyGroupResponse::from).toList());
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<StudyGroupResponse> getById(@PathVariable Long id) {
         StudyGroup group = studyGroupRepository.findById(id)
@@ -280,19 +293,6 @@ public class StudyGroupController {
 
         studyGroupRepository.delete(group);
         return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/my")
-    public ResponseEntity<List<StudyGroupResponse>> myGroups() {
-        Long userId = SecurityUtil.getCurrentUserId();
-        List<StudyGroup> groups = studyGroupRepository.findByMemberStudentId(userId);
-        return ResponseEntity.ok(groups.stream().map(StudyGroupResponse::from).toList());
-    }
-
-    @GetMapping("/course/{courseId}")
-    public ResponseEntity<List<StudyGroupResponse>> byCourse(@PathVariable Long courseId) {
-        List<StudyGroup> groups = studyGroupRepository.findByCourseId(courseId);
-        return ResponseEntity.ok(groups.stream().map(StudyGroupResponse::from).toList());
     }
 
     // ── System message helper ─────────────────────────────────────────
