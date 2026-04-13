@@ -236,7 +236,7 @@ export default function CourseDetail() {
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">
                     <p className="text-xs text-slate-400">난이도</p>
-                    <DifficultyDots level={skill.difficulty} />
+                    <DifficultyDots level={Number(skill.difficulty)} />
                   </div>
                 </div>
               </GlassCard>

@@ -83,7 +83,7 @@ export function useLiveKit({
   );
 
   const connect = useCallback(
-    async (preToken?: string, preRoomName?: string) => {
+    async (preToken?: string, _preRoomName?: string) => {
       if (isConnectedRef.current || isConnectingRef.current) return;
 
       isConnectingRef.current = true;

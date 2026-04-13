@@ -58,7 +58,7 @@ export default function PostSummaryPanel({ consultationId }: { consultationId?: 
   const saveMutation = useMutation({
     mutationFn: () => {
       if (!consultationId) throw new Error('No consultation ID');
-      return consultationsApi.createSummary(consultationId, {
+      return consultationsApi.saveSummary(consultationId, {
         summaryText,
         actionPlanJson: JSON.stringify(actionItems),
       });
