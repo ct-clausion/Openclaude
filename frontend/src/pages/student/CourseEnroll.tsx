@@ -196,7 +196,7 @@ export default function CourseEnroll() {
                       {' 개설'}
                     </span>
                     {course.maxCapacity && (
-                      <span className={course.enrollmentCount >= course.maxCapacity ? 'text-rose-500 font-medium' : ''}>
+                      <span className={(course.enrollmentCount ?? 0) >= course.maxCapacity ? 'text-rose-500 font-medium' : ''}>
                         {course.enrollmentCount ?? 0}/{course.maxCapacity}명
                       </span>
                     )}
@@ -205,7 +205,7 @@ export default function CourseEnroll() {
                 </div>
 
                 <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
-                  {!status && course.maxCapacity && course.enrollmentCount >= course.maxCapacity ? (
+                  {!status && course.maxCapacity && (course.enrollmentCount ?? 0) >= course.maxCapacity ? (
                     <span className="px-4 py-2 text-xs font-medium rounded-lg bg-slate-100 text-slate-400 border border-slate-200">
                       마감
                     </span>
