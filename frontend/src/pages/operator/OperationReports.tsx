@@ -5,8 +5,10 @@ import GlassCard from '../../components/common/GlassCard';
 
 const summaryKeyLabels: Record<string, string> = {
   totalStudents: '총 수강생',
+  totalStudentsAnalyzed: '분석 대상 수강생',
   activeStudents: '활성 수강생',
   atRiskStudents: '위험 수강생',
+  decliningStudents: '하락 추세 수강생',
   avgMastery: '평균 숙련도',
   avgMotivation: '평균 동기',
   avgAttendance: '평균 출석률',
