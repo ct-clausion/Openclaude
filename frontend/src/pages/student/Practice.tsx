@@ -229,33 +229,39 @@ const Practice: React.FC = () => {
 
                 <textarea
                   value={answerDraft}
-                  onChange={(e) => setAnswerDraft(e.target.value)}
+                  onChange={(e) => !evaluation && setAnswerDraft(e.target.value)}
+                  readOnly={!!evaluation}
                   placeholder={
                     isCodeQuestion(practiceQuestion)
                       ? '여기에 코드와 설명을 함께 작성하세요.'
                       : '여기에 자신의 답안을 작성하세요.'
                   }
-                  className={`mt-4 min-h-[200px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 ${
+                  className={`mt-4 min-h-[200px] w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm text-slate-800 outline-none transition ${
                     isCodeQuestion(practiceQuestion) ? 'font-mono' : ''
+                  } ${
+                    evaluation
+                      ? 'bg-slate-100 cursor-not-allowed opacity-70'
+                      : 'bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100'
                   }`}
                 />
 
                 <div className="mt-4 flex flex-wrap gap-3">
-                  <button
-                    onClick={() => evaluateMutation.mutate()}
-                    disabled={
-                      evaluateMutation.isPending ||
-                      !answerDraft.trim() ||
-                      !practiceQuestion
-                    }
-                    className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {evaluateMutation.isPending ? 'AI 채점 중...' : 'AI 채점 받기'}
-                  </button>
-                  {evaluation && (
+                  {!evaluation ? (
+                    <button
+                      onClick={() => evaluateMutation.mutate()}
+                      disabled={
+                        evaluateMutation.isPending ||
+                        !answerDraft.trim() ||
+                        !practiceQuestion
+                      }
+                      className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {evaluateMutation.isPending ? 'AI 채점 중...' : 'AI 채점 받기'}
+                    </button>
+                  ) : (
                     <button
                       onClick={handleNextQuestion}
-                      className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"
+                      className="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-indigo-500"
                     >
                       다음 문제 풀기
                     </button>
