@@ -12,10 +12,11 @@ function riskLevel(score: number): 'safe' | 'caution' | 'danger' {
   return 'safe';
 }
 
-function ScorePill({ label, value }: { label: string; value: number }) {
+function ScorePill({ label, value, invert }: { label: string; value: number; invert?: boolean }) {
+  const effective = invert ? 100 - value : value;
   const color =
-    value >= 70 ? 'text-emerald-700 bg-emerald-50' :
-    value >= 40 ? 'text-amber-700 bg-amber-50' :
+    effective >= 70 ? 'text-emerald-700 bg-emerald-50' :
+    effective >= 40 ? 'text-amber-700 bg-amber-50' :
     'text-rose-700 bg-rose-50';
 
   return (
@@ -63,7 +64,7 @@ export default function StudentTwinCard({ twin, onClick }: StudentTwinCardProps)
         <ScorePill label="이해도" value={twin.masteryScore} />
         <ScorePill label="수행력" value={twin.executionScore} />
         <ScorePill label="동기" value={twin.motivationScore} />
-        <ScorePill label="위험도" value={riskPercent} />
+        <ScorePill label="위험도" value={riskPercent} invert />
       </div>
 
       {twin.aiInsight && (
