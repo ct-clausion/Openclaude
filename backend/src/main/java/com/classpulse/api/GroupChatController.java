@@ -104,11 +104,13 @@ public class GroupChatController {
         String resolvedContent = isFile
                 ? (content.isBlank() ? Optional.ofNullable(request.fileName()).orElse("") : content)
                 : content;
+        // Server-side HTML escape — if any UI later renders chat as HTML, it's already safe.
+        String safeContent = com.classpulse.config.HtmlSanitizer.escape(resolvedContent);
 
         StudyGroupMessage message = StudyGroupMessage.builder()
                 .studyGroup(group)
                 .sender(sender)
-                .content(resolvedContent)
+                .content(safeContent)
                 .messageType(isFile ? "FILE" : "TEXT")
                 .fileKey(isFile ? request.fileKey() : null)
                 .fileName(isFile ? request.fileName() : null)

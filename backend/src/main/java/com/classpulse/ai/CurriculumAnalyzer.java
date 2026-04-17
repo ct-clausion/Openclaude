@@ -92,6 +92,9 @@ public class CurriculumAnalyzer {
 
     @Transactional
     public Map<String, Object> analyze(Long courseId, String materialsText, String objectives) {
+        // Cap upload size before prompt assembly — 60k chars ~= 15k tokens on OpenAI.
+        materialsText = AiInputGuard.truncate(materialsText, AiInputGuard.MAX_CURRICULUM_CHARS);
+
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
 

@@ -91,10 +91,18 @@ public class ChatbotAi {
 
     /**
      * 대화 메시지를 처리하고 AI 응답을 생성합니다.
+     *
+     * No @Transactional here: the LLM call is slow (seconds-to-minutes) and must not
+     * hold a DB connection. Each repository.save() below runs in its own implicit
+     * transaction, so a GPT failure leaves the user's message committed — conversation
+     * history stays consistent for the retry.
      */
-    @Transactional
     public Map<String, Object> chat(Long conversationId, String userMessage) {
-        Conversation conversation = conversationRepository.findById(conversationId)
+        // Double safety: controller already truncates, but we guard here too in case
+        // another code path (worker, retry, test) invokes the service directly.
+        userMessage = AiInputGuard.truncate(userMessage, AiInputGuard.MAX_CHAT_MESSAGE_CHARS);
+
+        Conversation conversation = conversationRepository.findByIdWithRelations(conversationId)
                 .orElseThrow(() -> new IllegalArgumentException("Conversation not found: " + conversationId));
 
         Long studentId = conversation.getStudent().getId();

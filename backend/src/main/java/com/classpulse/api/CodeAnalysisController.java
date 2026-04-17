@@ -130,9 +130,16 @@ public class CodeAnalysisController {
     }
 
     @GetMapping("/history")
-    public ResponseEntity<List<SubmissionDetailResponse>> getHistory(@RequestParam Long studentId) {
+    public ResponseEntity<List<SubmissionDetailResponse>> getHistory(
+            @RequestParam Long studentId,
+            @RequestParam(defaultValue = "50") int limit) {
         verifyAccessToStudent(studentId);
-        List<CodeSubmission> submissions = submissionRepository.findByStudentIdOrderByCreatedAtDesc(studentId);
+        // Cap the page size to prevent the server from materializing an unbounded list
+        // when a veteran student has thousands of submissions.
+        int safeLimit = Math.max(1, Math.min(limit, 200));
+        List<CodeSubmission> submissions = submissionRepository
+                .findByStudentIdOrderByCreatedAtDesc(studentId,
+                        org.springframework.data.domain.PageRequest.of(0, safeLimit));
         // Batch-fetch all feedbacks in one query to avoid N+1
         List<Long> submissionIds = submissions.stream().map(CodeSubmission::getId).toList();
         Map<Long, List<CodeFeedback>> feedbacksBySubmission = submissionIds.isEmpty()

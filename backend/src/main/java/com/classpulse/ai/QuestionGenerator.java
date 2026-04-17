@@ -267,6 +267,8 @@ public class QuestionGenerator {
         if (studentAnswer == null || studentAnswer.isBlank()) {
             throw new IllegalArgumentException("학생 답안을 입력해주세요.");
         }
+        // Cap answer length before it hits the prompt — stops token-bomb and injection.
+        studentAnswer = AiInputGuard.truncate(studentAnswer, AiInputGuard.MAX_STUDENT_ANSWER_CHARS);
 
         Course course = courseId != null
                 ? courseRepository.findById(courseId).orElse(null)

@@ -2,10 +2,13 @@ package com.classpulse.ai;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.Cursor;
+import org.springframework.data.redis.core.ScanOptions;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -52,8 +55,17 @@ public class TwinInferenceDebouncer {
      */
     @Scheduled(fixedRate = 60000)
     public void processReadyInferences() {
-        Set<String> readyKeys = redisTemplate.keys(READY_PREFIX + "*");
-        if (readyKeys == null || readyKeys.isEmpty()) return;
+        // SCAN instead of KEYS: KEYS blocks the Redis single-threaded event loop for
+        // the duration of the match, which stalls every other client on large databases.
+        Set<String> readyKeys = new HashSet<>();
+        try (Cursor<String> cursor = redisTemplate.scan(
+                ScanOptions.scanOptions().match(READY_PREFIX + "*").count(200).build())) {
+            while (cursor.hasNext()) readyKeys.add(cursor.next());
+        } catch (Exception e) {
+            log.warn("Redis SCAN failed: {}", e.getMessage());
+            return;
+        }
+        if (readyKeys.isEmpty()) return;
 
         for (String readyKey : readyKeys) {
             String pendingKey = readyKey.replace(READY_PREFIX, KEY_PREFIX);

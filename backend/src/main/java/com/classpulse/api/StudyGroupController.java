@@ -37,6 +37,7 @@ public class StudyGroupController {
     private final UserService userService;
     private final StudyGroupMatcherAi studyGroupMatcherAi;
     private final SimpMessagingTemplate messagingTemplate;
+    private final com.classpulse.config.S3FileCleanupService s3CleanupService;
 
     @Autowired(required = false)
     private RabbitTemplate rabbitTemplate;
@@ -178,6 +179,10 @@ public class StudyGroupController {
         Long userId = SecurityUtil.getCurrentUserId();
         User student = userService.findById(userId);
 
+        // Row lock: two concurrent joins can't both see size < max and both insert.
+        // Whichever request wins the lock reads the updated count for the next check.
+        studyGroupRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> new IllegalArgumentException("Study group not found: " + id));
         StudyGroup group = studyGroupRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Study group not found: " + id));
 
@@ -228,8 +233,10 @@ public class StudyGroupController {
 
         if (shouldDeleteGroup(group)) {
             broadcastRoomDeleted(group, student.getName() + "님이 그룹을 떠나 채팅방이 종료되었습니다.");
+            java.util.List<String> fileKeys = messageRepository.findFileKeysByStudyGroupId(id);
             messageRepository.deleteByStudyGroupId(id);
             studyGroupRepository.delete(group);
+            s3CleanupService.deleteObjects(fileKeys);
             return ResponseEntity.noContent().build();
         }
 
@@ -300,8 +307,11 @@ public class StudyGroupController {
             return ResponseEntity.status(HttpStatus.CONFLICT).build();
         }
 
+        // Collect S3 keys BEFORE DB delete so cleanup has the full list.
+        java.util.List<String> fileKeys = messageRepository.findFileKeysByStudyGroupId(id);
         messageRepository.deleteByStudyGroupId(id);
         studyGroupRepository.delete(group);
+        s3CleanupService.deleteObjects(fileKeys);
         return ResponseEntity.noContent().build();
     }
 

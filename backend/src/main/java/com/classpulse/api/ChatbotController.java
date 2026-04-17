@@ -1,6 +1,7 @@
 package com.classpulse.api;
 
 import com.classpulse.ai.ChatbotAi;
+import com.classpulse.config.RateLimiter;
 import com.classpulse.config.SecurityUtil;
 import com.classpulse.domain.chatbot.ChatMessage;
 import com.classpulse.domain.chatbot.ChatMessageRepository;
@@ -37,6 +38,7 @@ public class ChatbotController {
     private final ChatbotAi chatbotAi;
     private final MessagePublisher messagePublisher;
     private final SseEmitterService sseEmitterService;
+    private final RateLimiter rateLimiter;
 
     // --- DTOs ---
 
@@ -140,7 +142,7 @@ public class ChatbotController {
     }
 
     @PostMapping("/{id}/messages")
-    public ResponseEntity<MessageResponse> sendMessage(
+    public ResponseEntity<?> sendMessage(
             @PathVariable Long id,
             @RequestBody SendMessageRequest request
     ) {
@@ -152,9 +154,24 @@ public class ChatbotController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
+        // Rate limit LLM-backed endpoints: 10 messages/min, 200/hour per user.
+        // Protects the OpenAI bill against runaway scripts and infinite retries.
+        String key = String.valueOf(userId);
+        if (!rateLimiter.tryAcquire("chatbot-short", key, 60_000L, 10)
+                || !rateLimiter.tryAcquire("chatbot-long", key, 3_600_000L, 200)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body(Map.of("error", "메시지 전송 속도 제한에 도달했습니다. 잠시 후 다시 시도해주세요."));
+        }
+
+        // Bound user input length to cap prompt cost / LLM latency.
+        String content = request.content();
+        if (content != null && content.length() > 5000) {
+            content = content.substring(0, 5000);
+        }
+
         // Call ChatbotAi which saves user message, generates AI response with twin context,
         // saves assistant message, and updates conversation
-        Map<String, Object> aiResult = chatbotAi.chat(id, request.content());
+        Map<String, Object> aiResult = chatbotAi.chat(id, content);
 
         Long messageId = (Long) aiResult.get("messageId");
         ChatMessage aiMessage = chatMessageRepository.findById(messageId)

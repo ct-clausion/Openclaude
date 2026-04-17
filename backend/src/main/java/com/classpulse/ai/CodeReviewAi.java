@@ -93,7 +93,8 @@ public class CodeReviewAi {
         Long studentId = submission.getStudent().getId();
         Long courseId = submission.getCourse().getId();
         String language = submission.getLanguage();
-        String code = submission.getCodeContent();
+        // Hard cap: large submissions blow OpenAI token/$ budgets and create prompt-injection surface.
+        String code = AiInputGuard.truncate(submission.getCodeContent(), AiInputGuard.MAX_CODE_CHARS);
 
         // Get student's weak skills
         List<CurriculumSkill> courseSkills = curriculumSkillRepository.findByCourseId(courseId);
