@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @RestController
+@org.springframework.security.access.prepost.PreAuthorize("hasRole('OPERATOR')")
 @RequestMapping("/api/operator")
 @RequiredArgsConstructor
 @Transactional(readOnly = true)

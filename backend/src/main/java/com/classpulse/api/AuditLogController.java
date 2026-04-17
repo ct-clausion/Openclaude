@@ -12,6 +12,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
+@org.springframework.security.access.prepost.PreAuthorize("hasRole('OPERATOR')")
 @RequestMapping("/api/operator/audit-logs")
 @RequiredArgsConstructor
 public class AuditLogController {
@@ -21,8 +22,23 @@ public class AuditLogController {
     @GetMapping
     public ResponseEntity<Map<String, Object>> getAuditLogs(
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size) {
-        Page<OperatorAuditLog> logPage = auditLogRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(page, size));
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String actionType,
+            @RequestParam(required = false) String targetType) {
+        PageRequest pageable = PageRequest.of(page, size);
+        boolean hasAction = actionType != null && !actionType.isBlank();
+        boolean hasTarget = targetType != null && !targetType.isBlank();
+
+        Page<OperatorAuditLog> logPage;
+        if (hasAction && hasTarget) {
+            logPage = auditLogRepository.findByActionTypeAndTargetTypeOrderByCreatedAtDesc(actionType, targetType, pageable);
+        } else if (hasAction) {
+            logPage = auditLogRepository.findByActionTypeOrderByCreatedAtDesc(actionType, pageable);
+        } else if (hasTarget) {
+            logPage = auditLogRepository.findByTargetTypeOrderByCreatedAtDesc(targetType, pageable);
+        } else {
+            logPage = auditLogRepository.findAllByOrderByCreatedAtDesc(pageable);
+        }
 
         List<Map<String, Object>> content = logPage.getContent().stream().map(log -> {
             Map<String, Object> m = new LinkedHashMap<>();

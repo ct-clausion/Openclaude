@@ -1,6 +1,8 @@
 package com.classpulse.api;
 
 import com.classpulse.ai.CurriculumAnalyzer;
+import com.classpulse.config.CourseAccessGuard;
+import com.classpulse.config.SecurityUtil;
 import com.classpulse.domain.course.*;
 import com.classpulse.domain.twin.SkillMasterySnapshotRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +33,7 @@ public class CurriculumController {
     private final AsyncJobRepository asyncJobRepository;
     private final CurriculumAsyncService curriculumAsyncService;
     private final SkillMasterySnapshotRepository snapshotRepository;
+    private final CourseAccessGuard courseAccessGuard;
 
     // --- DTOs ---
 
@@ -61,8 +64,7 @@ public class CurriculumController {
             @PathVariable Long courseId,
             @RequestBody AnalyzeTextRequest request
     ) {
-        Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
+        Course course = courseAccessGuard.assertInstructorOwns(courseId, SecurityUtil.getCurrentUserId());
 
         String courseName = request.courseName() != null ? request.courseName() : course.getTitle();
 
@@ -105,8 +107,7 @@ public class CurriculumController {
             @RequestParam(value = "target", required = false, defaultValue = "") String target,
             @RequestParam(value = "additionalPrompt", required = false, defaultValue = "") String additionalPrompt
     ) {
-        Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
+        courseAccessGuard.assertInstructorOwns(courseId, SecurityUtil.getCurrentUserId());
 
         String content;
         try {
@@ -150,6 +151,8 @@ public class CurriculumController {
             @PathVariable Long skillId,
             @RequestBody UpdateSkillRequest request
     ) {
+        courseAccessGuard.assertInstructorOwns(courseId, SecurityUtil.getCurrentUserId());
+
         CurriculumSkill skill = skillRepository.findById(skillId)
                 .orElseThrow(() -> new IllegalArgumentException("Skill not found: " + skillId));
 
@@ -170,8 +173,7 @@ public class CurriculumController {
             @PathVariable Long courseId,
             @RequestBody CreateSkillRequest request
     ) {
-        Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
+        Course course = courseAccessGuard.assertInstructorOwns(courseId, SecurityUtil.getCurrentUserId());
 
         CurriculumSkill skill = CurriculumSkill.builder()
                 .course(course)
@@ -186,8 +188,7 @@ public class CurriculumController {
     @PostMapping("/skills/defaults")
     @Transactional
     public ResponseEntity<List<SkillResponse>> createDefaultSkills(@PathVariable Long courseId) {
-        Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
+        Course course = courseAccessGuard.assertInstructorOwns(courseId, SecurityUtil.getCurrentUserId());
 
         // 이미 스킬이 있으면 중복 생성 방지
         if (!skillRepository.findByCourseId(courseId).isEmpty()) {
@@ -237,8 +238,7 @@ public class CurriculumController {
     @PostMapping("/curriculum/recover-weeks")
     @Transactional
     public ResponseEntity<Map<String, Object>> recoverWeeks(@PathVariable Long courseId) {
-        Course course = courseRepository.findById(courseId)
-                .orElseThrow(() -> new IllegalArgumentException("Course not found: " + courseId));
+        Course course = courseAccessGuard.assertInstructorOwns(courseId, SecurityUtil.getCurrentUserId());
 
         if (!course.getWeeks().isEmpty()) {
             return ResponseEntity.ok(Map.of("message", "Weeks already exist", "count", course.getWeeks().size()));
@@ -318,6 +318,8 @@ public class CurriculumController {
             @PathVariable Long courseId,
             @PathVariable Long skillId
     ) {
+        courseAccessGuard.assertInstructorOwns(courseId, SecurityUtil.getCurrentUserId());
+
         CurriculumSkill skill = skillRepository.findById(skillId)
                 .orElseThrow(() -> new IllegalArgumentException("Skill not found: " + skillId));
 

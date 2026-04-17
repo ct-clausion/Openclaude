@@ -1,8 +1,10 @@
 package com.classpulse.api;
 
 import com.classpulse.ai.TwinInferenceEngine;
+import com.classpulse.config.CourseAccessGuard;
 import com.classpulse.config.SecurityUtil;
 import com.classpulse.domain.course.Course;
+import com.classpulse.domain.course.CourseEnrollmentRepository;
 import com.classpulse.domain.course.CourseRepository;
 import com.classpulse.domain.learning.Reflection;
 import com.classpulse.domain.learning.ReflectionRepository;
@@ -33,6 +35,8 @@ public class ReflectionController {
     private final ReflectionRepository reflectionRepository;
     private final UserService userService;
     private final CourseRepository courseRepository;
+    private final CourseEnrollmentRepository courseEnrollmentRepository;
+    private final CourseAccessGuard courseAccessGuard;
     private final ReflectionTwinUpdateService reflectionTwinUpdateService;
 
     // --- DTOs ---
@@ -76,6 +80,12 @@ public class ReflectionController {
         Course course = courseRepository.findById(request.courseId())
                 .orElseThrow(() -> new IllegalArgumentException("Course not found: " + request.courseId()));
 
+        // Enrollment check: a student cannot submit reflections for a course they are not enrolled in.
+        if (!courseEnrollmentRepository.existsByCourseIdAndStudentId(course.getId(), userId)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "Not enrolled in this course");
+        }
+
         Reflection reflection = Reflection.builder()
                 .student(student)
                 .course(course)
@@ -95,7 +105,7 @@ public class ReflectionController {
     public ResponseEntity<List<ReflectionResponse>> list(
             @RequestParam Long studentId,
             @RequestParam(required = false) Long courseId) {
-        verifyAccessToStudent(studentId);
+        verifyAccessToStudent(studentId, courseId);
         List<Reflection> reflections;
         if (courseId != null) {
             reflections = reflectionRepository.findByStudentIdAndCourseIdOrderByCreatedAtDesc(studentId, courseId);
@@ -105,12 +115,30 @@ public class ReflectionController {
         return ResponseEntity.ok(reflections.stream().map(ReflectionResponse::from).toList());
     }
 
-    private void verifyAccessToStudent(Long studentId) {
+    /**
+     * Access rules:
+     *  - A student can always read their own reflections.
+     *  - An instructor may read a student's reflections only when a specific courseId is
+     *    supplied AND the instructor owns that course AND the student is enrolled in it.
+     *    Instructors cannot browse across courses they don't own.
+     */
+    private void verifyAccessToStudent(Long studentId, Long courseId) {
         Long userId = SecurityUtil.getCurrentUserId();
         if (userId.equals(studentId)) return;
+
         User currentUser = userService.findById(userId);
-        if (currentUser.getRole() == User.Role.INSTRUCTOR) return;
-        throw new SecurityException("Access denied");
+        if (currentUser.getRole() != User.Role.INSTRUCTOR) {
+            throw new org.springframework.web.server.ResponseStatusException(HttpStatus.FORBIDDEN, "Access denied");
+        }
+        if (courseId == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "Instructors must specify a courseId they own");
+        }
+        courseAccessGuard.assertInstructorOwns(courseId, userId);
+        if (!courseEnrollmentRepository.existsByCourseIdAndStudentId(courseId, studentId)) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.FORBIDDEN, "Student is not enrolled in this course");
+        }
     }
 
     // --- Async Service ---

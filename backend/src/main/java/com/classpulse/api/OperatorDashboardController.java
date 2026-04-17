@@ -27,6 +27,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
+@org.springframework.security.access.prepost.PreAuthorize("hasRole('OPERATOR')")
 @RequestMapping("/api/operator/dashboard")
 @RequiredArgsConstructor
 @Transactional(readOnly = true)

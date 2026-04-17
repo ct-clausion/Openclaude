@@ -51,9 +51,11 @@ public class AnnouncementController {
     @PostMapping
     public ResponseEntity<Map<String, Object>> createAnnouncement(@RequestBody Map<String, Object> body) {
         Long authorId = SecurityUtil.getCurrentUserId();
+        // Sanitize on write — any future switch to HTML rendering on the client becomes
+        // XSS-safe by default instead of requiring all consumers to remember to escape.
         Announcement a = Announcement.builder()
-                .title((String) body.get("title"))
-                .content((String) body.get("content"))
+                .title(com.classpulse.config.HtmlSanitizer.escape((String) body.get("title")))
+                .content(com.classpulse.config.HtmlSanitizer.escape((String) body.get("content")))
                 .targetType((String) body.getOrDefault("targetType", "ALL"))
                 .targetCourseId(body.get("targetCourseId") != null ? Long.valueOf(body.get("targetCourseId").toString()) : null)
                 .isUrgent(Boolean.TRUE.equals(body.get("isUrgent")))
@@ -86,13 +88,14 @@ public class AnnouncementController {
         Announcement a = announcementRepository.findById(id).orElse(null);
         if (a == null) return ResponseEntity.notFound().build();
 
-        if (body.containsKey("title")) a.setTitle(body.get("title"));
-        if (body.containsKey("content")) a.setContent(body.get("content"));
+        if (body.containsKey("title")) a.setTitle(com.classpulse.config.HtmlSanitizer.escape(body.get("title")));
+        if (body.containsKey("content")) a.setContent(com.classpulse.config.HtmlSanitizer.escape(body.get("content")));
         announcementRepository.save(a);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('OPERATOR')")
     public ResponseEntity<Void> deleteAnnouncement(@PathVariable Long id) {
         // Delete read records first to avoid FK violation
         announcementReadRepository.deleteByAnnouncementId(id);

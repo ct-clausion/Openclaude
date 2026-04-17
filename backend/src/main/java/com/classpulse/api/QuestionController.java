@@ -1,6 +1,7 @@
 package com.classpulse.api;
 
 import com.classpulse.ai.QuestionGenerator;
+import com.classpulse.config.CourseAccessGuard;
 import com.classpulse.config.SecurityUtil;
 import com.classpulse.domain.course.*;
 import com.classpulse.domain.learning.Question;
@@ -34,6 +35,17 @@ public class QuestionController {
     private final QuestionGenerator questionGenerator;
     private final QuestionGenerationService questionGenerationService;
     private final UserService userService;
+    private final CourseAccessGuard courseAccessGuard;
+
+    /** Ensures the current user owns the course this question belongs to. */
+    private void assertOwnsQuestion(Question question) {
+        Long courseId = question.getCourse() != null ? question.getCourse().getId() : null;
+        if (courseId == null) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    org.springframework.http.HttpStatus.BAD_REQUEST, "Question is not linked to a course");
+        }
+        courseAccessGuard.assertInstructorOwns(courseId, SecurityUtil.getCurrentUserId());
+    }
 
     // --- DTOs ---
 
@@ -154,6 +166,8 @@ public class QuestionController {
             @PathVariable Long courseId,
             @RequestBody GenerateRequest request
     ) {
+        courseAccessGuard.assertInstructorOwns(courseId, SecurityUtil.getCurrentUserId());
+
         AsyncJob job = AsyncJob.builder()
                 .jobType("QUESTION_GENERATION")
                 .status("PENDING")
@@ -243,6 +257,7 @@ public class QuestionController {
         verifyInstructorRole();
         Question question = questionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Question not found: " + id));
+        assertOwnsQuestion(question);
         question.setApprovalStatus("APPROVED");
         question = questionRepository.save(question);
         return ResponseEntity.ok(QuestionResponse.from(question));
@@ -253,6 +268,7 @@ public class QuestionController {
         verifyInstructorRole();
         Question question = questionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Question not found: " + id));
+        assertOwnsQuestion(question);
         question.setApprovalStatus("REJECTED");
         question = questionRepository.save(question);
         return ResponseEntity.ok(QuestionResponse.from(question));
@@ -261,8 +277,7 @@ public class QuestionController {
     @PostMapping("/api/questions")
     public ResponseEntity<QuestionResponse> create(@RequestBody CreateQuestionRequest request) {
         verifyInstructorRole();
-        Course course = courseRepository.findById(request.courseId())
-                .orElseThrow(() -> new IllegalArgumentException("Course not found: " + request.courseId()));
+        Course course = courseAccessGuard.assertInstructorOwns(request.courseId(), SecurityUtil.getCurrentUserId());
 
         Question question = Question.builder()
                 .course(course)
@@ -292,6 +307,7 @@ public class QuestionController {
         verifyInstructorRole();
         Question question = questionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Question not found: " + id));
+        assertOwnsQuestion(question);
 
         if (request.questionType() != null) question.setQuestionType(request.questionType());
         if (request.difficulty() != null) question.setDifficulty(request.difficulty());
@@ -308,6 +324,7 @@ public class QuestionController {
         verifyInstructorRole();
         Question question = questionRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Question not found: " + id));
+        assertOwnsQuestion(question);
         questionRepository.delete(question);
         return ResponseEntity.noContent().build();
     }
