@@ -69,9 +69,23 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
             return bearerToken.substring(BEARER_PREFIX.length());
         }
-        // Query-param tokens are logged by proxies/browsers and leak. STOMP now authenticates
-        // via its CONNECT frame (see StompChannelInterceptor), not via URL.
+        // SSE endpoints are the one exception where query-param tokens are allowed.
+        // EventSource (the browser API) cannot attach custom headers, so
+        // `?token=...` is the only viable auth for these streams. STOMP uses its
+        // own CONNECT frame and does NOT fall back here.
+        if (isSsePath(request.getServletPath())) {
+            String tokenParam = request.getParameter("token");
+            if (StringUtils.hasText(tokenParam)) {
+                return tokenParam;
+            }
+        }
         return null;
+    }
+
+    private boolean isSsePath(String path) {
+        if (path == null) return false;
+        return path.equals("/api/notifications/stream")
+                || (path.startsWith("/api/chatbot/conversations/") && path.endsWith("/stream"));
     }
 
     @Override
