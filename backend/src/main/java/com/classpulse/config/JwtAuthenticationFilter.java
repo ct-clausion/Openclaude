@@ -29,6 +29,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtProvider jwtProvider;
+    private final JwtBlocklist jwtBlocklist;
 
     @Override
     protected void doFilterInternal(
@@ -39,7 +40,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             String token = extractTokenFromRequest(request);
 
-            if (token != null && jwtProvider.validateToken(token)) {
+            if (token != null && jwtProvider.validateToken(token) && !jwtBlocklist.isRevoked(token)) {
                 Long userId = jwtProvider.extractUserId(token);
                 String rolesStr = jwtProvider.extractRoles(token);
 
@@ -68,11 +69,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
             return bearerToken.substring(BEARER_PREFIX.length());
         }
-        // Also check query parameter for WebSocket connections
-        String tokenParam = request.getParameter("token");
-        if (StringUtils.hasText(tokenParam)) {
-            return tokenParam;
-        }
+        // Query-param tokens are logged by proxies/browsers and leak. STOMP now authenticates
+        // via its CONNECT frame (see StompChannelInterceptor), not via URL.
         return null;
     }
 

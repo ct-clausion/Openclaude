@@ -3,11 +3,14 @@ package com.classpulse.api;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Slf4j
@@ -40,6 +43,23 @@ public class GlobalExceptionHandler {
         log.warn("Type mismatch: {}", e.getMessage());
         return ResponseEntity.badRequest()
                 .body(Map.of("error", "Invalid parameter: " + e.getName()));
+    }
+
+    /** Bean-validation failures (@Valid) — return the first field error in a stable shape. */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException e) {
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+        e.getBindingResult().getFieldErrors().forEach(fe ->
+                fieldErrors.putIfAbsent(fe.getField(), fe.getDefaultMessage() != null ? fe.getDefaultMessage() : "invalid"));
+        String first = fieldErrors.values().stream().findFirst().orElse("유효하지 않은 요청입니다.");
+        return ResponseEntity.badRequest().body(Map.of("error", first, "fields", fieldErrors));
+    }
+
+    /** Already-sized exceptions with explicit status codes (e.g., our 403/404/429). */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, String>> handleResponseStatus(ResponseStatusException e) {
+        String msg = e.getReason() != null ? e.getReason() : e.getStatusCode().toString();
+        return ResponseEntity.status(e.getStatusCode()).body(Map.of("error", msg));
     }
 
     @ExceptionHandler(Exception.class)
