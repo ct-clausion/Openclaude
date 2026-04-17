@@ -115,10 +115,6 @@ const ConsultationPage: React.FC = () => {
   const scheduledConsultations = (consultations ?? []).filter((c) => c.status === 'SCHEDULED');
   const rejectedConsultations = (consultations ?? []).filter((c) => c.status === 'REJECTED');
 
-  void rejectModal;
-  void rejectedMessage;
-  void rejectMutation;
-
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="sticky top-[41px] lg:top-0 z-30 bg-white/80 backdrop-blur border-b border-slate-100">

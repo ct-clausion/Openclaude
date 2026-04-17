@@ -51,6 +51,9 @@ export default function CourseEnroll() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-enrollments'] });
       queryClient.invalidateQueries({ queryKey: ['all-courses'] });
+      // Invalidate the detail modal's query too so the enroll button label updates
+      // from "수강 신청" to "수강 중" without closing/reopening the modal.
+      queryClient.invalidateQueries({ queryKey: ['course-detail'] });
       setConfirm(null);
       setSuccessMessage('수강 신청이 완료되었습니다! 강사 승인을 기다려주세요.');
       setTimeout(() => setSuccessMessage(''), 4000);
@@ -193,11 +196,13 @@ export default function CourseEnroll() {
                         {' ~ '}
                         {new Date(course.endDate).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
                       </span>
-                    ) : (
+                    ) : course.createdAt ? (
                       <span>
                         {new Date(course.createdAt).toLocaleDateString('ko-KR', { year: 'numeric', month: 'short', day: 'numeric' })}
                         {' 개설'}
                       </span>
+                    ) : (
+                      <span>날짜 미정</span>
                     )}
                     {course.schedule && <span>{course.schedule}</span>}
                     {course.classTime && <span>{course.classTime}</span>}

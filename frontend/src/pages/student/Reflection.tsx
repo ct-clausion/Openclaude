@@ -33,13 +33,13 @@ const Reflection: React.FC = () => {
   const { data: twin } = useQuery({
     queryKey: ['twin', studentId, courseId],
     queryFn: () => twinApi.getStudentTwin(studentId, courseId),
-    enabled: !!studentId,
+    enabled: !!studentId && !!courseId,
   });
 
   const { data: prevReflections } = useQuery({
     queryKey: ['reflections', studentId, courseId],
     queryFn: () => reflectionsApi.getReflections(studentId, courseId),
-    enabled: !!studentId,
+    enabled: !!studentId && !!courseId,
   });
 
   // Dynamic AI sidebar content based on real data

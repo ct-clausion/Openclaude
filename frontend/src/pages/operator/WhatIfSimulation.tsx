@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { operatorApi } from '../../api/operator';
 import { twinApi } from '../../api/twin';
@@ -17,6 +17,12 @@ export default function WhatIfSimulation() {
   const [targetStudentId, setTargetStudentId] = useState('');
   const [targetCourseId, setTargetCourseId] = useState('');
   const [result, setResult] = useState<SimulationResult | null>(null);
+
+  // Clear stale result whenever the simulation inputs change — prevents a previous
+  // scenario's numbers from being mistaken for the current selection.
+  useEffect(() => {
+    setResult(null);
+  }, [scenarioType, targetStudentId, targetCourseId]);
 
   const { data: students } = useQuery({
     queryKey: ['operator', 'students'],
@@ -134,8 +140,8 @@ export default function WhatIfSimulation() {
               <option value="">과정 선택</option>
               {(targetStudentId
                 ? courses?.filter((c) => {
-                    const selectedStudent = students?.find(s => s.id === targetStudentId);
-                    return selectedStudent?.courseId === String(c.id);
+                    const selectedStudent = students?.find(s => String(s.id) === String(targetStudentId));
+                    return String(selectedStudent?.courseId ?? '') === String(c.id);
                   })
                 : courses
               )?.map((c) => (

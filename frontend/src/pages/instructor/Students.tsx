@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useDeferredValue, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { instructorApi, type StudentTwinEntry } from '../../api/instructor';
@@ -14,6 +14,8 @@ export default function Students() {
   const [sortBy, setSortBy] = useState<SortKey>('risk');
   const [filterRisk, setFilterRisk] = useState<FilterRisk>('all');
   const [search, setSearch] = useState('');
+  // Lowers filter work off the critical keystroke path on large rosters.
+  const deferredSearch = useDeferredValue(search).trim().toLowerCase();
 
   const { data: students = [], isLoading } = useQuery({
     queryKey: ['instructor', 'students', courseId],
@@ -31,7 +33,7 @@ export default function Students() {
   const filtered = students
     .filter((s: StudentTwinEntry) => {
       if (filterRisk !== 'all' && riskLevel(s.overallRiskScore) !== filterRisk) return false;
-      if (search && !s.studentName.includes(search)) return false;
+      if (deferredSearch && !s.studentName.toLowerCase().includes(deferredSearch)) return false;
       return true;
     })
     .sort((a: StudentTwinEntry, b: StudentTwinEntry) => {

@@ -5,6 +5,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { questionsApi } from '../../api/questions';
 import { reviewsApi } from '../../api/reviews';
 import ReviewTimeline from '../../components/student/ReviewTimeline';
+import { useCourseId } from '../../hooks/useCourseId';
 import type { PracticeEvaluation, PracticeQuestion, ReviewTask } from '../../types';
 
 type ReviewLocationState = {
@@ -74,6 +75,7 @@ const Review: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const queryClient = useQueryClient();
+  const courseId = useCourseId();
   const initialTaskId = (location.state as ReviewLocationState | null)?.taskId;
 
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(
@@ -83,8 +85,8 @@ const Review: React.FC = () => {
   const [evaluation, setEvaluation] = useState<PracticeEvaluation | null>(null);
 
   const { data: tasks = [], isLoading: isTaskLoading } = useQuery<ReviewTask[]>({
-    queryKey: ['reviewsToday'],
-    queryFn: () => reviewsApi.getTodayReviews(),
+    queryKey: ['reviewsToday', courseId],
+    queryFn: () => reviewsApi.getTodayReviews(courseId ?? undefined),
     staleTime: 0,
   });
 

@@ -58,7 +58,7 @@ const NextStep: React.FC = () => {
   const { data: recs = [] } = useQuery<Recommendation[]>({
     queryKey: ['recommendations', studentId, courseId],
     queryFn: () => recommendationsApi.getRecommendations(studentId, courseId),
-    enabled: !!studentId,
+    enabled: !!studentId && !!courseId,
   });
 
   const list = recs;

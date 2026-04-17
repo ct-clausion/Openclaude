@@ -9,14 +9,18 @@ interface InviteCode {
   createdByName: string | null;
   isUsed: boolean;
   usedByName: string | null;
+  targetRole: 'INSTRUCTOR' | 'OPERATOR';
   expiresAt: string;
   createdAt: string;
   usedAt: string | null;
 }
 
+type TargetRole = 'INSTRUCTOR' | 'OPERATOR';
+
 export default function InviteCodeManagement() {
   const queryClient = useQueryClient();
   const [expiryDays, setExpiryDays] = useState(7);
+  const [targetRole, setTargetRole] = useState<TargetRole>('INSTRUCTOR');
   const [copiedId, setCopiedId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,7 +30,7 @@ export default function InviteCodeManagement() {
   });
 
   const createMutation = useMutation({
-    mutationFn: () => api.post<InviteCode>('/api/operator/invite-codes', { expiryDays }),
+    mutationFn: () => api.post<InviteCode>('/api/operator/invite-codes', { expiryDays, targetRole }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['operator', 'invite-codes'] });
       setError(null);
@@ -39,6 +43,8 @@ export default function InviteCodeManagement() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/api/operator/invite-codes/${id}`),
+    // Clear any stale error from a previous attempt each time we start.
+    onMutate: () => setError(null),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['operator', 'invite-codes'] });
     },
@@ -87,10 +93,15 @@ export default function InviteCodeManagement() {
     });
 
   const handleCopyCode = (code: InviteCode) => {
-    navigator.clipboard.writeText(code.code).then(() => {
-      setCopiedId(code.id);
-      setTimeout(() => setCopiedId(null), 2000);
-    });
+    navigator.clipboard.writeText(code.code).then(
+      () => {
+        setCopiedId(code.id);
+        setTimeout(() => setCopiedId(null), 2000);
+      },
+      (err) => {
+        setError(`클립보드 접근이 차단되었습니다: ${err?.message ?? '알 수 없는 오류'}`);
+      },
+    );
   };
 
   const handleCreate = () => {
@@ -111,6 +122,17 @@ export default function InviteCodeManagement() {
       <GlassCard className="p-5">
         <h2 className="text-sm font-bold text-slate-800 mb-4">새 초대 코드 생성</h2>
         <div className="flex items-end gap-3 flex-wrap">
+          <div>
+            <label className="block text-xs font-medium text-slate-600 mb-1">대상 역할</label>
+            <select
+              value={targetRole}
+              onChange={(e) => setTargetRole(e.target.value as TargetRole)}
+              className="px-3 py-2 rounded-lg border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-slate-400"
+            >
+              <option value="INSTRUCTOR">강사</option>
+              <option value="OPERATOR">운영자</option>
+            </select>
+          </div>
           <div>
             <label className="block text-xs font-medium text-slate-600 mb-1">유효 기간</label>
             <select
@@ -160,6 +182,7 @@ export default function InviteCodeManagement() {
             <thead>
               <tr className="text-xs text-slate-500 border-b border-slate-100">
                 <th className="text-left px-5 py-2 font-medium">코드</th>
+                <th className="text-left px-5 py-2 font-medium">역할</th>
                 <th className="text-left px-5 py-2 font-medium">상태</th>
                 <th className="text-left px-5 py-2 font-medium">생성자</th>
                 <th className="text-left px-5 py-2 font-medium">사용자</th>
@@ -206,6 +229,15 @@ export default function InviteCodeManagement() {
                             </button>
                           )}
                         </div>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${
+                          code.targetRole === 'OPERATOR'
+                            ? 'bg-violet-50 text-violet-700 border border-violet-100'
+                            : 'bg-sky-50 text-sky-700 border border-sky-100'
+                        }`}>
+                          {code.targetRole === 'OPERATOR' ? '운영자' : '강사'}
+                        </span>
                       </td>
                       <td className="px-5 py-3">{statusBadge(status)}</td>
                       <td className="px-5 py-3 text-sm text-slate-600">

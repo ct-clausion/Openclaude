@@ -73,6 +73,9 @@ export default function AttendanceManagement() {
 
   const handleMarkAllPresent = () => {
     if (!records) return;
+    // Explicit confirm — rare, bulk, and easy to mis-click from the toolbar.
+    // (Users can still tweak individual rows before Save, but this flags intent.)
+    if (!window.confirm(`${records.length}명 전원을 '출석'으로 표시하시겠습니까?`)) return;
     const all: Record<string, string> = {};
     records.forEach((r) => { all[r.studentId] = 'PRESENT'; });
     setLocalRecords(all);
@@ -133,8 +136,8 @@ export default function AttendanceManagement() {
             <p className="text-xs text-slate-500">총 세션</p>
           </GlassCard>
           <GlassCard className="p-4 text-center">
-            <p className={`text-2xl font-extrabold ${stats.avgAttendanceRate < 0.8 ? 'text-amber-600' : 'text-emerald-600'}`}>
-              {(stats.avgAttendanceRate * 100).toFixed(0)}%
+            <p className={`text-2xl font-extrabold ${(stats.avgAttendanceRate ?? 0) < 0.8 ? 'text-amber-600' : 'text-emerald-600'}`}>
+              {((stats.avgAttendanceRate ?? 0) * 100).toFixed(0)}%
             </p>
             <p className="text-xs text-slate-500">평균 출석률</p>
           </GlassCard>

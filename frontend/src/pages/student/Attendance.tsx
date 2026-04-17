@@ -131,7 +131,7 @@ export default function StudentAttendance() {
         ) : myAttendance && myAttendance.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {myAttendance.map((course) => {
-              const pct = Math.round(course.attendanceRate * 100);
+              const pct = Math.round((course.attendanceRate ?? 0) * 100);
               const noSessions = course.totalCount === 0;
               const barColor =
                 pct >= 90 ? 'bg-emerald-500'

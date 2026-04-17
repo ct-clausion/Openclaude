@@ -54,9 +54,17 @@ export default function OperationReports() {
       {/* Instructor Effectiveness Comparison Chart */}
       <GlassCard className="p-5">
         <h2 className="text-sm font-bold text-slate-900 mb-4">강사 효과성 비교 (학생 트윈 평균)</h2>
-        {effectiveness && effectiveness.length > 0 ? (
+        {(() => {
+          // Drop rows where numeric fields are null — recharts silently fails to render
+          // a stable domain when mixed with nulls.
+          const cleanData = (effectiveness ?? []).map((e) => ({
+            ...e,
+            avgMastery: e.avgMastery ?? 0,
+            avgMotivation: e.avgMotivation ?? 0,
+          }));
+          return cleanData.length > 0 ? (
           <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={effectiveness} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <BarChart data={cleanData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="name" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} domain={[0, 100]} />
@@ -68,7 +76,8 @@ export default function OperationReports() {
           </ResponsiveContainer>
         ) : (
           <p className="text-sm text-slate-400">강사 데이터가 없습니다.</p>
-        )}
+        );
+        })()}
         {effectiveness && effectiveness.length > 1 && (() => {
           const sorted = [...effectiveness].sort((a, b) => a.avgMastery - b.avgMastery);
           const lowest = sorted[0];
