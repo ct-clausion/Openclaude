@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { operatorApi } from '../../api/operator';
 import GlassCard from '../../components/common/GlassCard';
+import Skeleton from '../../components/common/Skeleton';
 
 const summaryKeyLabels: Record<string, string> = {
   totalStudents: '총 수강생',
@@ -98,7 +99,10 @@ export default function OperationReports() {
       </GlassCard>
 
       {isLoading ? (
-        <p className="text-sm text-slate-400">리포트 로딩 중...</p>
+        <div className="space-y-4">
+          <Skeleton variant="card" />
+          <Skeleton variant="chart" />
+        </div>
       ) : report ? (
         <>
           <GlassCard className="p-5">

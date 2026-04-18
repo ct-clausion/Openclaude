@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { operatorApi } from '../../api/operator';
 import { coursesApi } from '../../api/courses';
 import GlassCard from '../../components/common/GlassCard';
+import Skeleton from '../../components/common/Skeleton';
+import { useConfirm } from '../../hooks/useConfirm';
 import type { CurriculumSkill } from '../../types';
 
 function DifficultyDots({ level }: { level: number }) {
@@ -25,6 +28,7 @@ export default function CourseDetail() {
   const { courseId } = useParams<{ courseId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { confirm, confirmNode } = useConfirm();
   const [rejectNote, setRejectNote] = useState('');
   const [showRejectInput, setShowRejectInput] = useState(false);
 
@@ -45,6 +49,7 @@ export default function CourseDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['operator', 'courses', courseId] });
       queryClient.invalidateQueries({ queryKey: ['operator', 'courses'] });
+      toast.success('과정을 승인했습니다.');
     },
   });
 
@@ -55,6 +60,7 @@ export default function CourseDetail() {
       queryClient.invalidateQueries({ queryKey: ['operator', 'courses'] });
       setShowRejectInput(false);
       setRejectNote('');
+      toast.success('과정을 반려했습니다.');
     },
   });
 
@@ -63,11 +69,12 @@ export default function CourseDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['operator', 'courses', courseId] });
       queryClient.invalidateQueries({ queryKey: ['operator', 'courses'] });
+      toast.success('승인을 해제했습니다.');
     },
   });
 
   if (courseLoading) {
-    return <p className="text-sm text-slate-400">로딩 중...</p>;
+    return <Skeleton variant="card" className="max-w-3xl" />;
   }
 
   if (!course) {
@@ -156,7 +163,14 @@ export default function CourseDetail() {
           {approvalStatus === 'PENDING' && (
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => approveMutation.mutate()}
+                onClick={async () => {
+                  const ok = await confirm({
+                    title: '과정 승인',
+                    message: `"${course.title}" 과정을 승인하시겠습니까?\n승인 후 수강생이 수강 신청할 수 있습니다.`,
+                    confirmLabel: '승인',
+                  });
+                  if (ok) approveMutation.mutate();
+                }}
                 disabled={approveMutation.isPending}
                 className="px-4 py-2 rounded-lg bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors"
               >
@@ -172,10 +186,14 @@ export default function CourseDetail() {
           )}
           {approvalStatus === 'APPROVED' && (
             <button
-              onClick={() => {
-                if (window.confirm('이 과정의 승인을 해제하시겠습니까?')) {
-                  revokeMutation.mutate();
-                }
+              onClick={async () => {
+                const ok = await confirm({
+                  title: '승인 해제',
+                  message: `"${course.title}" 과정의 승인을 해제하시겠습니까?\n이미 수강 중인 학생들의 접근이 제한될 수 있습니다.`,
+                  tone: 'danger',
+                  confirmLabel: '해제',
+                });
+                if (ok) revokeMutation.mutate();
               }}
               disabled={revokeMutation.isPending}
               className="px-4 py-2 rounded-lg bg-amber-500 text-white text-sm font-medium hover:bg-amber-600 disabled:opacity-50 transition-colors"
@@ -222,7 +240,7 @@ export default function CourseDetail() {
       <div>
         <h2 className="text-lg font-bold text-slate-900 mb-3">커리큘럼 스킬</h2>
         {skillsLoading ? (
-          <p className="text-sm text-slate-400">스킬 로딩 중...</p>
+          <Skeleton variant="list" rows={3} />
         ) : !skills || skills.length === 0 ? (
           <p className="text-sm text-slate-400 text-center py-8">등록된 스킬이 없습니다.</p>
         ) : (
@@ -244,6 +262,7 @@ export default function CourseDetail() {
           </div>
         )}
       </div>
+      {confirmNode}
     </div>
   );
 }

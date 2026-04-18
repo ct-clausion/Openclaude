@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import GlassCard from '../../components/common/GlassCard';
+import Skeleton from '../../components/common/Skeleton';
 
 interface TodaySession {
   sessionId: string;
@@ -71,7 +72,7 @@ export default function StudentAttendance() {
       <GlassCard className="p-5">
         <h2 className="text-sm font-bold text-slate-900 mb-4">오늘 수업</h2>
         {todayLoading ? (
-          <p className="text-sm text-slate-400">로딩 중...</p>
+          <Skeleton variant="list" rows={3} />
         ) : todaySessions && todaySessions.length > 0 ? (
           <div className="space-y-3">
             {todaySessions.map((session) => (
@@ -127,7 +128,7 @@ export default function StudentAttendance() {
       <div>
         <h2 className="text-sm font-bold text-slate-900 mb-3">과정별 출결 현황</h2>
         {myLoading ? (
-          <p className="text-sm text-slate-400">로딩 중...</p>
+          <Skeleton variant="list" rows={3} />
         ) : myAttendance && myAttendance.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {myAttendance.map((course) => {

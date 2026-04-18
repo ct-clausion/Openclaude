@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { instructorApi, type EnrollmentEntry } from '../../api/instructor';
 import { useCourses } from '../../hooks/useCourseId';
+import Skeleton from '../../components/common/Skeleton';
 
 const statusConfig: Record<string, { label: string; cls: string }> = {
   PENDING: { label: '대기', cls: 'bg-amber-50 text-amber-700 border-amber-200' },
@@ -48,6 +50,7 @@ export default function Enrollments() {
       queryClient.invalidateQueries({ queryKey: ['instructor', 'enrollments', courseId] });
       queryClient.invalidateQueries({ queryKey: ['instructor', 'students', courseId] });
       setConfirm(null);
+      toast.success('수강 신청을 승인했습니다.');
     },
   });
 
@@ -59,6 +62,7 @@ export default function Enrollments() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['instructor', 'enrollments', courseId] });
       setConfirm(null);
+      toast.success('수강 신청을 반려했습니다.');
     },
   });
 
@@ -115,7 +119,7 @@ export default function Enrollments() {
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
         {coursesLoading && (
-          <p className="text-sm text-slate-400 text-center py-12">불러오는 중...</p>
+          <Skeleton variant="list" rows={3} />
         )}
 
         {!coursesLoading && !courseId && (
@@ -123,7 +127,7 @@ export default function Enrollments() {
         )}
 
         {courseId && loading && (
-          <p className="text-sm text-slate-400 text-center py-12">불러오는 중...</p>
+          <Skeleton variant="list" rows={3} />
         )}
 
         {courseId && !loading && items.length === 0 && (

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import ConsultationActionCard from '../../components/student/ConsultationActionCard';
+import Skeleton from '../../components/common/Skeleton';
 import { consultationsApi } from '../../api/consultations';
 import { coursesApi } from '../../api/courses';
 import type { Consultation, ActionPlan, Course } from '../../types';
@@ -287,7 +288,7 @@ const ConsultationPage: React.FC = () => {
           </h2>
 
           {isLoading && (
-            <p className="text-sm text-slate-400 text-center py-6">불러오는 중...</p>
+            <Skeleton variant="list" rows={3} />
           )}
 
           {!isLoading && pastConsultations.length === 0 && (

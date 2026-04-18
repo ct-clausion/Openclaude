@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { operatorApi } from '../../api/operator';
 import GlassCard from '../../components/common/GlassCard';
+import Skeleton from '../../components/common/Skeleton';
 
 export default function InstructorAnalysis() {
   const { data: effectiveness, isLoading: effLoading } = useQuery({
@@ -24,7 +25,10 @@ export default function InstructorAnalysis() {
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-slate-400">분석 데이터 로딩 중...</p>
+        <div className="space-y-4">
+          <Skeleton variant="card" />
+          <Skeleton variant="chart" />
+        </div>
       ) : (
         <>
           {/* Workload Balance */}

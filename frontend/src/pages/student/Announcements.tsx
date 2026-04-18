@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client';
 import GlassCard from '../../components/common/GlassCard';
+import Skeleton from '../../components/common/Skeleton';
 
 interface Announcement {
   id: string;
@@ -46,7 +47,7 @@ export default function StudentAnnouncements() {
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-slate-400">로딩 중...</p>
+        <Skeleton variant="list" rows={3} />
       ) : (
         <div className="space-y-3">
           {announcements?.map((a) => (

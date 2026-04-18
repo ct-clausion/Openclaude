@@ -275,9 +275,10 @@ export default function GroupChat() {
       <header className="sticky top-[41px] lg:top-0 z-30 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 sm:px-6 py-3 flex items-center gap-3 sm:gap-4">
         <button
           onClick={() => navigate('/student/study-groups')}
+          aria-label="스터디 그룹 목록으로 돌아가기"
           className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
         >
-          <svg className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-5 h-5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
           </svg>
         </button>
@@ -450,6 +451,7 @@ export default function GroupChat() {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={!connected || uploading}
+            aria-label="파일 첨부"
             className="shrink-0 w-10 h-10 flex items-center justify-center rounded-xl border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             title="파일 첨부"
           >

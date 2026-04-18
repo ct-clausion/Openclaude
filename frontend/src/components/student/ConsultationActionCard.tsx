@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import { consultationsApi } from '../../api/consultations';
 import { useCourseId } from '../../hooks/useCourseId';
+import Skeleton from '../common/Skeleton';
 import type { Consultation, ActionPlan } from '../../types';
 
 
@@ -58,7 +59,7 @@ const ConsultationActionCard: React.FC<ConsultationActionCardProps> = ({
       <h2 className="text-lg font-bold text-slate-900 mb-4">상담 현황</h2>
 
       {isLoading && (
-        <p className="text-sm text-slate-400 text-center py-6">불러오는 중...</p>
+        <Skeleton variant="list" rows={2} />
       )}
 
       {!isLoading && list.length === 0 && (

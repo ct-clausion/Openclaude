@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { operatorApi } from '../../api/operator';
 import GlassCard from '../../components/common/GlassCard';
+import Skeleton from '../../components/common/Skeleton';
 
 export default function InstructorManagement() {
   const { data: instructors, isLoading } = useQuery({
@@ -16,7 +17,9 @@ export default function InstructorManagement() {
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-slate-400">로딩 중...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} variant="card" />)}
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {instructors?.map((inst) => (

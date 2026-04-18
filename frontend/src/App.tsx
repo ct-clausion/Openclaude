@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+import { Toaster } from 'sonner';
 import { useAuthStore } from './store/authStore';
 import { queryClient } from './lib/queryClient';
 import ErrorPage, { AppErrorBoundary } from './pages/ErrorPage';
@@ -147,6 +148,12 @@ export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AppErrorBoundary>
+      <Toaster
+        position="top-center"
+        richColors
+        closeButton
+        toastOptions={{ duration: 4000 }}
+      />
       <BrowserRouter>
         <AuthSessionSync />
         <Routes>

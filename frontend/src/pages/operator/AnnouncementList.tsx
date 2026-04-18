@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { operatorApi } from '../../api/operator';
 import GlassCard from '../../components/common/GlassCard';
+import Skeleton from '../../components/common/Skeleton';
+import { useConfirm } from '../../hooks/useConfirm';
 
 export default function AnnouncementList() {
   const queryClient = useQueryClient();
+  const { confirm, confirmNode } = useConfirm();
   const [showForm, setShowForm] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [title, setTitle] = useState('');
@@ -26,12 +30,16 @@ export default function AnnouncementList() {
       setContent('');
       setTargetType('ALL');
       setIsUrgent(false);
+      toast.success('공지를 발송했습니다.');
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: operatorApi.deleteAnnouncement,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['operator', 'announcements'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['operator', 'announcements'] });
+      toast.success('공지를 삭제했습니다.');
+    },
   });
 
   return (
@@ -92,7 +100,7 @@ export default function AnnouncementList() {
 
       {/* List */}
       {isLoading ? (
-        <p className="text-sm text-slate-400">로딩 중...</p>
+        <Skeleton variant="list" rows={4} />
       ) : (
         <div className="space-y-3">
           {announcements?.map((a) => (
@@ -129,11 +137,15 @@ export default function AnnouncementList() {
                   <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-50">
                     <p className="text-xs text-slate-400">{a.createdAt?.slice(0, 16).replace('T', ' ')}</p>
                     <button
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation();
-                        if (window.confirm('이 공지사항을 삭제하시겠습니까?')) {
-                          deleteMutation.mutate(a.id);
-                        }
+                        const ok = await confirm({
+                          title: '공지 삭제',
+                          message: `"${a.title}" 공지를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`,
+                          tone: 'danger',
+                          confirmLabel: '삭제',
+                        });
+                        if (ok) deleteMutation.mutate(a.id);
                       }}
                       className="px-3 py-1.5 rounded-lg text-xs font-medium text-rose-500 hover:bg-rose-50 transition-colors"
                     >
@@ -149,6 +161,7 @@ export default function AnnouncementList() {
           )}
         </div>
       )}
+      {confirmNode}
     </div>
   );
 }

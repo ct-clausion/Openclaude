@@ -4,6 +4,7 @@ import { reviewsApi } from '../../api/reviews';
 import { reflectionsApi } from '../../api/reflections';
 import { twinApi } from '../../api/twin';
 import { useCourseId } from '../../hooks/useCourseId';
+import Skeleton from '../../components/common/Skeleton';
 import type { ReviewTask, Reflection, StudentTwin } from '../../types';
 
 // ── Helpers ─────────────────────────────────────────────────
@@ -391,7 +392,7 @@ export default function StudentDetail() {
 
       <main className="max-w-5xl mx-auto px-6 py-6 space-y-6">
         {twinLoading && (
-          <div className="text-center py-12 text-sm text-slate-400">분석 데이터를 불러오는 중...</div>
+          <div className="space-y-3"><Skeleton variant="card" /><Skeleton variant="card" /></div>
         )}
 
         {!twinLoading && !twin && (

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { questionsApi } from '../../api/questions';
 import { coursesApi } from '../../api/courses';
 import { pollJob } from '../../api/jobs';
@@ -8,6 +9,8 @@ import { useCourseId } from '../../hooks/useCourseId';
 import type { Question } from '../../types';
 import TagChip from '../../components/common/TagChip';
 import Modal from '../../components/common/Modal';
+import Skeleton from '../../components/common/Skeleton';
+import { useConfirm } from '../../hooks/useConfirm';
 
 type FilterStatus = 'ALL' | Question['approvalStatus'];
 
@@ -38,8 +41,23 @@ const emptyForm = {
 export default function QuestionBank() {
   const queryClient = useQueryClient();
   const courseId = useCourseId();
+  const { confirm, confirmNode } = useConfirm();
   const [filter, setFilter] = useState<FilterStatus>('ALL');
   const [skillFilter, setSkillFilter] = useState<string>('ALL');
+
+  // Bulk review: AI often generates 20+ questions at once and reviewing them
+  // one-by-one is a known slog. Hold a set of selected ids so we can approve/
+  // reject them as a batch.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const toggleSelected = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
 
   // 문제 상세 모달
   const [detailQuestion, setDetailQuestion] = useState<Question | null>(null);
@@ -85,6 +103,35 @@ export default function QuestionBank() {
     },
     onSuccess: invalidateQuestions,
   });
+
+  const bulkReviewMutation = useMutation({
+    mutationFn: async ({ ids, status }: { ids: string[]; status: 'APPROVED' | 'REJECTED' }) => {
+      // Backend has no batch endpoint yet — fire in parallel and wait. Keeps
+      // the UI single-click even though it's N round-trips. Switch to a real
+      // batch endpoint when traffic justifies it.
+      const fn = status === 'APPROVED' ? questionsApi.approveQuestion : questionsApi.rejectQuestion;
+      await Promise.all(ids.map((id) => fn(id)));
+      return { ids, status };
+    },
+    onSuccess: ({ ids, status }) => {
+      invalidateQuestions();
+      clearSelection();
+      toast.success(`${ids.length}개 문제를 ${status === 'APPROVED' ? '승인' : '반려'}했습니다.`);
+    },
+  });
+
+  const handleBulkAction = async (status: 'APPROVED' | 'REJECTED') => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    const ok = await confirm({
+      title: status === 'APPROVED' ? '일괄 승인' : '일괄 반려',
+      message: `선택한 ${ids.length}개 문제를 ${status === 'APPROVED' ? '모두 승인' : '모두 반려'}합니다.\n되돌리려면 각 문제를 개별 수정해야 합니다.`,
+      tone: status === 'REJECTED' ? 'danger' : 'default',
+      confirmLabel: status === 'APPROVED' ? '일괄 승인' : '일괄 반려',
+    });
+    if (!ok) return;
+    bulkReviewMutation.mutate({ ids, status });
+  };
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Parameters<typeof questionsApi.updateQuestion>[1] }) =>
@@ -140,11 +187,37 @@ export default function QuestionBank() {
     onError: () => setGenStatus(''),
   });
 
-  const filtered = questions.filter((q) => {
-    if (filter !== 'ALL' && q.approvalStatus !== filter) return false;
-    if (skillFilter !== 'ALL' && String(q.skillId ?? '') !== skillFilter) return false;
-    return true;
-  });
+  const filtered = useMemo(
+    () => questions.filter((q) => {
+      if (filter !== 'ALL' && q.approvalStatus !== filter) return false;
+      if (skillFilter !== 'ALL' && String(q.skillId ?? '') !== skillFilter) return false;
+      return true;
+    }),
+    [questions, filter, skillFilter],
+  );
+
+  // Pending questions in the current filter — the only ones eligible for bulk review.
+  const pendingInView = useMemo(
+    () => filtered.filter((q) => q.approvalStatus === 'PENDING'),
+    [filtered],
+  );
+  const allPendingSelected =
+    pendingInView.length > 0 && pendingInView.every((q) => selectedIds.has(String(q.id)));
+  const toggleSelectAllPending = () => {
+    if (allPendingSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        pendingInView.forEach((q) => next.delete(String(q.id)));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        pendingInView.forEach((q) => next.add(String(q.id)));
+        return next;
+      });
+    }
+  };
 
   const counts = {
     ALL: questions.length,
@@ -299,12 +372,52 @@ export default function QuestionBank() {
           </select>
         </div>
 
+        {/* Bulk review toolbar — visible only when there are selected PENDING questions */}
+        {selectedIds.size > 0 && (
+          <div className="sticky top-[105px] lg:top-[64px] z-20 mb-4 flex items-center gap-3 rounded-xl border border-indigo-200 bg-indigo-50/90 backdrop-blur px-4 py-3 shadow-sm">
+            <span className="text-sm font-bold text-indigo-800">{selectedIds.size}개 선택됨</span>
+            <button
+              onClick={() => handleBulkAction('APPROVED')}
+              disabled={bulkReviewMutation.isPending}
+              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+            >
+              일괄 승인
+            </button>
+            <button
+              onClick={() => handleBulkAction('REJECTED')}
+              disabled={bulkReviewMutation.isPending}
+              className="px-3 py-1.5 text-xs font-bold rounded-lg bg-white border border-rose-300 text-rose-600 hover:bg-rose-50 disabled:opacity-50 transition-colors"
+            >
+              일괄 반려
+            </button>
+            <button
+              onClick={clearSelection}
+              className="ml-auto text-xs text-slate-500 hover:text-slate-700"
+            >
+              선택 해제
+            </button>
+          </div>
+        )}
+
+        {/* Select-all for pending questions in the current filter */}
+        {pendingInView.length > 0 && (
+          <div className="mb-3 flex items-center gap-2">
+            <label className="inline-flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allPendingSelected}
+                onChange={toggleSelectAllPending}
+                className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-400"
+              />
+              대기 문제 전체 선택 ({pendingInView.length}개)
+            </label>
+          </div>
+        )}
+
         {/* Loading */}
         {isLoading && (
           <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-28 rounded-2xl bg-white animate-pulse" />
-            ))}
+            {[1, 2, 3].map((i) => <Skeleton key={i} variant="card" />)}
           </div>
         )}
 
@@ -321,9 +434,25 @@ export default function QuestionBank() {
           {filtered.map((q) => {
             const cfg = statusConfig[q.approvalStatus];
 
+            const isPending = q.approvalStatus === 'PENDING';
+            const isSelected = selectedIds.has(String(q.id));
             return (
-              <div key={q.id} className="bg-white/85 backdrop-blur-[12px] border border-white/60 rounded-2xl shadow-sm p-5 hover:shadow-md transition-shadow group">
-                <div className="flex items-start justify-between mb-2">
+              <div
+                key={q.id}
+                className={`bg-white/85 backdrop-blur-[12px] border rounded-2xl shadow-sm p-5 hover:shadow-md transition-shadow group ${
+                  isSelected ? 'border-indigo-400 ring-2 ring-indigo-100' : 'border-white/60'
+                }`}
+              >
+                <div className="flex items-start gap-3 mb-2">
+                  {isPending && (
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleSelected(String(q.id))}
+                      aria-label={`"${q.content.slice(0, 30)}" 문제 선택`}
+                      className="mt-1 rounded border-slate-300 text-indigo-600 focus:ring-indigo-400"
+                    />
+                  )}
                   <p className="text-sm text-slate-700 leading-relaxed flex-1 mr-4">{q.content}</p>
                   <TagChip label={cfg.label} color={cfg.color} size="sm" />
                 </div>
@@ -379,7 +508,8 @@ export default function QuestionBank() {
                     </button>
                     <button
                       onClick={() => setDeleteConfirm(q)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors opacity-0 group-hover:opacity-100"
+                      aria-label="문제 삭제"
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 focus-visible:opacity-100 focus-visible:text-rose-600 transition-colors md:opacity-0 md:group-hover:opacity-100"
                       title="삭제"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -660,6 +790,7 @@ export default function QuestionBank() {
           )}
         </div>
       </Modal>
+      {confirmNode}
     </div>
   );
 }

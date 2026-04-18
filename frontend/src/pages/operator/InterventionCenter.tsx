@@ -1,10 +1,14 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { operatorApi } from '../../api/operator';
 import GlassCard from '../../components/common/GlassCard';
+import Skeleton from '../../components/common/Skeleton';
+import { useConfirm } from '../../hooks/useConfirm';
 
 export default function InterventionCenter() {
   const queryClient = useQueryClient();
+  const { confirm, confirmNode } = useConfirm();
   const [messageText, setMessageText] = useState<Record<string, string>>({});
 
   const { data: center, isLoading } = useQuery({
@@ -26,11 +30,23 @@ export default function InterventionCenter() {
       queryClient.invalidateQueries({ queryKey: ['operator', 'intervention-center'] });
       queryClient.invalidateQueries({ queryKey: ['operator', 'intervention-directives'] });
       setMessageText({});
+      toast.success('강사에게 지시를 전송했습니다.');
     },
   });
 
-  const handleSendDirective = (instructorId: string, studentIds: string[], _courseId: string) => {
+  const handleSendDirective = async (
+    instructorId: string,
+    studentIds: string[],
+    _courseId: string,
+    instructorName: string,
+  ) => {
     const message = messageText[instructorId] || '해당 학생들에 대한 주의 및 개입을 요청합니다.';
+    const ok = await confirm({
+      title: '개입 지시 전송',
+      message: `${instructorName} 강사에게 ${studentIds.length}명의 학생에 대한 개입 지시를 전송합니다.\n강사의 알림에 남고, 감사 로그에도 기록됩니다.`,
+      confirmLabel: '전송',
+    });
+    if (!ok) return;
     directiveMutation.mutate({
       instructorId,
       studentIds,
@@ -49,7 +65,7 @@ export default function InterventionCenter() {
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-slate-400">분석 중...</p>
+        <Skeleton variant="list" rows={3} />
       ) : center && center.length > 0 ? (
         <div className="space-y-4">
           {center.map((group) => (
@@ -106,7 +122,8 @@ export default function InterventionCenter() {
                       onClick={() => handleSendDirective(
                         group.instructorId,
                         group.atRiskStudents.map((s: { studentId: string }) => s.studentId),
-                        group.courseId
+                        group.courseId,
+                        group.instructorName,
                       )}
                       disabled={directiveMutation.isPending}
                       className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-xs font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors whitespace-nowrap"
@@ -148,6 +165,7 @@ export default function InterventionCenter() {
           </div>
         </GlassCard>
       )}
+      {confirmNode}
     </div>
   );
 }

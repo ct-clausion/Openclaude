@@ -486,16 +486,18 @@ export default function CurriculumUpload() {
                               difficulty: String(skill.difficulty),
                             });
                           }}
-                          className="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors opacity-0 group-hover:opacity-100"
+                          aria-label="스킬 수정"
+                          className="p-1 rounded-md text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 focus-visible:opacity-100 focus-visible:text-indigo-600 transition-colors md:opacity-0 md:group-hover:opacity-100"
                           title="수정"
                         >
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
                             <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z" />
                           </svg>
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(skill)}
-                          className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors opacity-0 group-hover:opacity-100"
+                          aria-label="스킬 삭제"
+                          className="p-1 rounded-md text-slate-400 hover:text-rose-600 hover:bg-rose-50 focus-visible:opacity-100 focus-visible:text-rose-600 transition-colors md:opacity-0 md:group-hover:opacity-100"
                           title="삭제"
                         >
                           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

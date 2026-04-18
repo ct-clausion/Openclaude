@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { operatorApi } from '../../api/operator';
 import GlassCard from '../../components/common/GlassCard';
+import Skeleton from '../../components/common/Skeleton';
 
 function RiskBadge({ risk }: { risk: number }) {
   const color = risk >= 80 ? 'bg-rose-100 text-rose-700' : risk >= 60 ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700';
@@ -21,10 +22,11 @@ export default function StudentManagement() {
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-slate-400">로딩 중...</p>
+        <Skeleton variant="table" rows={6} />
       ) : (
         <GlassCard className="overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
+          <div className="md:hidden text-[11px] text-slate-400 px-4 pt-3">← 가로로 스크롤하세요</div>
           <table className="w-full text-sm min-w-[640px]">
             <thead>
               <tr className="border-b border-slate-200 bg-slate-50">

@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { studyGroupApi } from '../../api/studyGroup';
 import { useAuthStore } from '../../store/authStore';
 import { useCourseId } from '../../hooks/useCourseId';
+import Skeleton from '../../components/common/Skeleton';
 import type { StudyGroup, StudyGroupMember } from '../../types';
 
 type Tab = 'my' | 'explore' | 'matches';
@@ -195,7 +196,7 @@ export default function StudyGroups() {
         {/* My Groups */}
         {tab === 'my' && (
           <div className="space-y-4">
-            {myLoading && <p className="text-sm text-slate-400 text-center py-12">불러오는 중...</p>}
+            {myLoading && <Skeleton variant="list" rows={3} />}
             {!myLoading && myGroups.length === 0 && (
               <div className="bg-white/85 backdrop-blur-[12px] border border-white/60 rounded-2xl shadow-lg p-12 text-center">
                 <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
@@ -242,7 +243,7 @@ export default function StudyGroups() {
         {tab === 'explore' && (
           <div className="space-y-4">
             {!courseId && <p className="text-sm text-slate-400 text-center py-12">수강 중인 과정이 없습니다</p>}
-            {courseId && courseLoading && <p className="text-sm text-slate-400 text-center py-12">불러오는 중...</p>}
+            {courseId && courseLoading && <Skeleton variant="list" rows={3} />}
             {courseId && !courseLoading && courseGroups.length === 0 && (
               <div className="bg-white/85 backdrop-blur-[12px] border border-white/60 rounded-2xl shadow-lg p-12 text-center">
                 <h3 className="text-base font-bold text-slate-800 mb-2">아직 그룹이 없습니다</h3>

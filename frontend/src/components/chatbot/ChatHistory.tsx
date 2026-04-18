@@ -105,7 +105,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
                   {onDelete && (
                     <button
                       onClick={(e) => { e.stopPropagation(); onDelete(conv.id); }}
-                      className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-md hover:bg-red-50 flex items-center justify-center transition-all"
+                      className="md:opacity-0 md:group-hover:opacity-100 focus-visible:opacity-100 w-6 h-6 rounded-md hover:bg-red-50 flex items-center justify-center transition-all"
                       aria-label="대화 삭제"
                     >
                       <svg className="w-3.5 h-3.5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

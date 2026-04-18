@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { instructorApi, type StudentTwinEntry } from '../../api/instructor';
 import { useCourseId } from '../../hooks/useCourseId';
 import StudentTwinCard from '../../components/instructor/StudentTwinCard';
+import Skeleton from '../../components/common/Skeleton';
 
 type SortKey = 'name' | 'risk' | 'updated';
 type FilterRisk = 'all' | 'danger' | 'caution' | 'safe';
@@ -114,8 +115,8 @@ export default function Students() {
         </div>
 
         {isLoading && (
-          <div className="text-center py-12 text-sm text-slate-400">
-            학생 데이터를 불러오는 중...
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} variant="card" />)}
           </div>
         )}
 

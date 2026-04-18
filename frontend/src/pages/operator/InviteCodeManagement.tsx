@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { api } from '../../api/client';
 import GlassCard from '../../components/common/GlassCard';
+import Skeleton from '../../components/common/Skeleton';
+import { useConfirm } from '../../hooks/useConfirm';
 
 interface InviteCode {
   id: number;
@@ -19,6 +22,7 @@ type TargetRole = 'INSTRUCTOR' | 'OPERATOR';
 
 export default function InviteCodeManagement() {
   const queryClient = useQueryClient();
+  const { confirm, confirmNode } = useConfirm();
   const [expiryDays, setExpiryDays] = useState(7);
   const [targetRole, setTargetRole] = useState<TargetRole>('INSTRUCTOR');
   const [copiedId, setCopiedId] = useState<number | null>(null);
@@ -29,27 +33,25 @@ export default function InviteCodeManagement() {
     queryFn: () => api.get<InviteCode[]>('/api/operator/invite-codes'),
   });
 
+  // Opt out of global toast — this form renders its own inline error banner.
   const createMutation = useMutation({
     mutationFn: () => api.post<InviteCode>('/api/operator/invite-codes', { expiryDays, targetRole }),
+    meta: { silent: true },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['operator', 'invite-codes'] });
       setError(null);
+      toast.success('초대 코드를 생성했습니다.');
     },
     onError: (err: Error) => {
-      console.error('Invite code creation failed:', err);
       setError(err.message || '초대 코드 생성에 실패했습니다.');
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/api/operator/invite-codes/${id}`),
-    // Clear any stale error from a previous attempt each time we start.
-    onMutate: () => setError(null),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['operator', 'invite-codes'] });
-    },
-    onError: (err: Error) => {
-      setError(err.message || '삭제에 실패했습니다.');
+      toast.success('초대 코드를 삭제했습니다.');
     },
   });
 
@@ -171,7 +173,7 @@ export default function InviteCodeManagement() {
         </div>
 
         {isLoading ? (
-          <div className="p-10 text-center text-sm text-slate-400">불러오는 중...</div>
+          <div className="p-4"><Skeleton variant="table" rows={4} /></div>
         ) : codes.length === 0 ? (
           <div className="p-10 text-center text-sm text-slate-400">
             생성된 초대 코드가 없습니다.
@@ -256,7 +258,15 @@ export default function InviteCodeManagement() {
                         {!code.isUsed && (
                           <button
                             type="button"
-                            onClick={() => deleteMutation.mutate(code.id)}
+                            onClick={async () => {
+                              const ok = await confirm({
+                                title: '초대 코드 삭제',
+                                message: `코드 "${code.code}"를 삭제하시겠습니까?\n이 코드로는 더 이상 가입할 수 없게 됩니다.`,
+                                tone: 'danger',
+                                confirmLabel: '삭제',
+                              });
+                              if (ok) deleteMutation.mutate(code.id);
+                            }}
                             disabled={deleteMutation.isPending}
                             className="text-xs text-red-500 hover:text-red-700 font-medium disabled:opacity-40 transition-colors"
                           >
@@ -272,6 +282,7 @@ export default function InviteCodeManagement() {
           </div>
         )}
       </GlassCard>
+      {confirmNode}
     </div>
   );
 }
