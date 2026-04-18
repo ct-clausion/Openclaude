@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -52,13 +53,13 @@ public class ChatbotController {
             LocalDateTime createdAt, LocalDateTime updatedAt,
             int messageCount
     ) {
-        public static ConversationResponse from(Conversation c) {
+        public static ConversationResponse from(Conversation c, int messageCount) {
             return new ConversationResponse(
                     c.getId(), c.getStudent().getId(),
                     c.getCourse() != null ? c.getCourse().getId() : null,
                     c.getTitle(), c.getStatus(),
                     c.getCreatedAt(), c.getUpdatedAt(),
-                    c.getMessages() != null ? c.getMessages().size() : 0
+                    messageCount
             );
         }
     }
@@ -114,14 +115,23 @@ public class ChatbotController {
                 .build();
         conversation = conversationRepository.save(conversation);
 
-        return ResponseEntity.status(HttpStatus.CREATED).body(ConversationResponse.from(conversation));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ConversationResponse.from(conversation, 0));
     }
 
     @GetMapping
     public ResponseEntity<List<ConversationResponse>> listConversations() {
         Long userId = SecurityUtil.getCurrentUserId();
         List<Conversation> conversations = conversationRepository.findByStudentIdOrderByUpdatedAtDesc(userId);
-        return ResponseEntity.ok(conversations.stream().map(ConversationResponse::from).toList());
+        // Pre-count messages in one query to avoid N+1 lazy-loads (OSIV is disabled).
+        Map<Long, Integer> counts = new HashMap<>();
+        for (Object[] row : conversationRepository.countMessagesByStudentId(userId)) {
+            counts.put((Long) row[0], ((Number) row[1]).intValue());
+        }
+        return ResponseEntity.ok(
+                conversations.stream()
+                        .map(c -> ConversationResponse.from(c, counts.getOrDefault(c.getId(), 0)))
+                        .toList()
+        );
     }
 
     @GetMapping("/{id}")
