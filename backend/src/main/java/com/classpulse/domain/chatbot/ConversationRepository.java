@@ -18,4 +18,12 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
      */
     @Query("SELECT c FROM Conversation c LEFT JOIN FETCH c.student LEFT JOIN FETCH c.course WHERE c.id = :id")
     Optional<Conversation> findByIdWithRelations(@Param("id") Long id);
+
+    // Message counts per conversation for a student. Used by the list endpoint so we
+    // don't trip LazyInit by calling c.getMessages().size() outside a transaction.
+    // Returns rows of [conversationId, count] — empty conversations are omitted.
+    @Query("SELECT m.conversation.id, COUNT(m) FROM ChatMessage m "
+            + "WHERE m.conversation.student.id = :studentId "
+            + "GROUP BY m.conversation.id")
+    List<Object[]> countMessagesByStudentId(@Param("studentId") Long studentId);
 }
